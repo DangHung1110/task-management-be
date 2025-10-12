@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: task-management-app
+    restart: always
+    ports:
+      - "3010:4411"   
+    environment:
+      PORT: 4411
+      DB_HOST: task-postgres  
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: 391351
+      DB_NAME: task_db
+      SESSION_SECRET: dev_session_secret
+    depends_on:
+      - task-postgres
+    networks:
+      - task-net
+    volumes:
+      - .:/app               
+
+  task-postgres:
+    image: postgres:15-alpine
+    container_name: task-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 391351
+      POSTGRES_DB: task_db
+    ports:
+      - "5436:5432"  
+    volumes:
+      - task_postgres_data:/var/lib/postgresql/data
+    networks:
+      - task-net
+
+networks:
+  task-net:
+
+volumes:
+  task_postgres_data:
