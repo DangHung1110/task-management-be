@@ -1,19 +1,23 @@
 import { DataSource } from "typeorm";
-import { User, Account } from "../../entities";
-import { UserRepo } from "../user/repository";
-import { AccountRepository } from "./repository";
+import { User, Account } from "../../../entities";
+import { UserRepo } from "../../user/repository";
+import { AccountsRepository } from ".";
 
 export class AuthRepository {
     private userRepo: UserRepo;
-    private accountRepo: AccountRepository;
+    private accountRepo: AccountsRepository;
 
     constructor(ds: DataSource) {
         this.userRepo = new UserRepo(ds);
-        this.accountRepo = new AccountRepository(ds);
+        this.accountRepo = new AccountsRepository();
     }
 
     async findByEmail(email: string) {
         return this.userRepo.findByEmail(email);
+    }
+
+    async findById(userId: string) {
+        return this.userRepo.findById(userId);
     }
 
     async findAccountByUsername(username: string) {
@@ -21,10 +25,8 @@ export class AuthRepository {
     }
 
     async createUserWithAccount(userData: { name: string; email: string }, accountData: { username: string; passwordHash: string }) {
-        // Create user first
         const user = await this.userRepo.createAndSave(userData);
         
-        // Create account linked to user
         await this.accountRepo.createAndSave({
             user,
             username: accountData.username,
@@ -39,8 +41,6 @@ export class AuthRepository {
     }
 
     async findByValidResetToken(token: string, currentDate: Date) {
-        // This needs custom query - for now, return null
-        // You can extend UserRepo to add this method
         return null;
     }
 }

@@ -60,7 +60,7 @@ userRegistry.registerPath({
 router.get(
   "/",
   authMiddleware,
-  validateRequestMiddleware(GetUsersPaginationQuerySchema),
+  validateRequestMiddleware({query: GetUsersPaginationQuerySchema}),
   userController.getUsers
 );
 
@@ -83,9 +83,11 @@ userRegistry.registerPath({
 router.get(
   "/:id",
   authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    }),
+  }),
   userController.getUserById
 );
 
@@ -112,7 +114,7 @@ userRegistry.registerPath({
 router.post(
   "/",
   authMiddleware,
-  validateRequestMiddleware(CreateUserDto, "body"),
+  validateRequestMiddleware({ body: CreateUserDto }),
   userController.createUser
 );
 
@@ -142,10 +144,12 @@ userRegistry.registerPath({
 router.put(
   "/:id",
   authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
-  validateRequestMiddleware(UpdateUserDto, "body"),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    })
+  }),
+  validateRequestMiddleware({ body: UpdateUserDto }),
   userController.updateUser
 );
 
@@ -170,9 +174,11 @@ userRegistry.registerPath({
 router.delete(
   "/:id",
   authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    })
+  }),
   userController.deleteUser
 );
 

@@ -1,23 +1,36 @@
-import { DataSource } from "typeorm";
-import { Account } from "../../../entities";
+import { Repository } from "typeorm";
+import { AppDataSource } from "../../../config";
+import { Account, User } from "../../../entities";
 
-export class AccountRepository {
-    private repo;
+export class AccountsRepository extends Repository<Account> {
+  constructor() {
+    super(Account, AppDataSource.createEntityManager());
+  }
 
-    constructor(ds: DataSource) {
-        this.repo = ds.getRepository(Account);
-    }
+  async findByUsername(username: string): Promise<Account | null> {
+    return await this.findOne({ 
+      where: { username },
+      relations: ['user']
+    });
+  }
 
-    findByUsername(username: string) {
-        return this.repo.findOne({ where: { username }, relations: ["user"] });
-    }
+  async findByUserId(userId: string): Promise<Account | null> {
+    return await this.findOne({ 
+      where: { user: { id: userId } },
+      relations: ['user']
+    });
+  }
 
-    createAndSave(data: Partial<Account>) {
-        const account = this.repo.create(data);
-        return this.repo.save(account);
-    }
-
-    updatePassword(id: string, passwordHash: string) {
-        return this.repo.update({ id }, { passwordHash });
-    }
+  async createAndSave(accountData: {
+    user: User;
+    username: string;
+    passwordHash: string;
+  }): Promise<Account> {
+    const account = this.create({
+      user: accountData.user,
+      username: accountData.username,
+      passwordHash: accountData.passwordHash,
+    });
+    return await this.save(account);
+  }
 }

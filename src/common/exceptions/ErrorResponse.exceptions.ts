@@ -41,6 +41,12 @@ export class UnauthorizedException extends HttpException {
   }
 }
 
+export class BadRequestException extends HttpException {
+  constructor(public readonly message: string) {
+    super(StatusCodes.BAD_REQUEST, message);
+  }
+}
+
 export class OptionalException extends HttpException {
 	constructor(
 		public readonly httpStatusCode: StatusCodes,

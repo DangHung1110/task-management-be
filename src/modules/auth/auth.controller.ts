@@ -98,17 +98,55 @@ export class AuthController {
         return this.httpResponse.success(response);
     }
 
-    async forgotPassword(req: Request, res: Response) {
-        const { email } = req.body as { email: string };
-        const result = await this.authService.forgotPassword(email);
-        const response = new ServiceResponse(ResponseStatus.Success, result.msg, null, 200);
-        return this.httpResponse.success(response);
-    }
+    requestPasswordReset = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = req.body;
+            const ipAddress = req.ip;
+            const userAgent = req.headers["user-agent"];
 
-    async resetPassword(req: Request, res: Response) {
-        const { token, password } = req.body as { token: string; password: string };
-        const result = await this.authService.resetPassword(token, password);
-        const response = new ServiceResponse(ResponseStatus.Success, result.msg, null, 200);
-        return this.httpResponse.success(response);
-    }
+            const result = await this.authService.requestPasswordReset(
+                email,
+                ipAddress,
+                userAgent
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: result.message,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, code } = req.body;
+
+            const result = await this.authService.verifyPasswordResetOtp(email, code);
+
+            return res.status(200).json({
+                success: true,
+                message: result.message,
+                data: { resetToken: result.token },
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { token, newPassword } = req.body;
+
+            const result = await this.authService.resetPassword(token, newPassword);
+
+            return res.status(200).json({
+                success: true,
+                message: result.message,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }

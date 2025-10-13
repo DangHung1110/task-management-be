@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { User, Account, AccountProvider, Token } from "../entities/User";
+import { User, Account, AccountProvider, Token, Otp } from "../entities/User";
 import { Role, UserRole } from "../entities/Role";
 import dotenv from "dotenv";
 
@@ -20,6 +20,7 @@ export const AppDataSource = new DataSource({
     Account,
     AccountProvider,
     Token,
+    Otp,
     Role,
     UserRole
   ],

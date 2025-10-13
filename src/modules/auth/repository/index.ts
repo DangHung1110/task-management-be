@@ -1,3 +1,4 @@
-export * from "./accountsProvidersRepo"
-export * from "./accountsRepo"
-export * from "./tokenRepo"
+export * from "./accountsRepo";
+export * from "./accountsProvidersRepo";
+export * from "./tokenRepo";
+export * from "./otpRepo";

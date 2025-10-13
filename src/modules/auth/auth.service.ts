@@ -1,17 +1,33 @@
-import { AuthRepository } from "./auth.repository";
+import { AuthRepository } from "./repository/auth.repository";
+import { AccountsRepository } from "./repository/accountsRepo";
+import { OtpRepository } from "./repository/otpRepo";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../../entities/User/user";
-import { ConflictException, NotFoundException } from "../../common/exceptions/ErrorResponse.exceptions";    
+import { 
+    ConflictException, 
+    NotFoundException,
+    BadRequestException,
+    UnauthorizedException
+} from "../../common/exceptions/ErrorResponse.exceptions";    
 import dotenv from "dotenv";
 import { Request, Response } from "express";
-import crypto from "crypto";
-import { sendEmail } from "../../config/mail.config";
 import { AppDataSource } from "../../config";
+import { OtpType } from "../../entities/User";
+import { transporter, emailTemplates } from "../../config/mail.config";
+
 dotenv.config();
 
 export class AuthService {
-    private authRepo = new AuthRepository(AppDataSource);
+    private authRepo: AuthRepository;
+    private accountsRepo: AccountsRepository;
+    private otpRepo: OtpRepository;
+  
+    constructor() {
+        this.authRepo = new AuthRepository(AppDataSource);
+        this.accountsRepo = new AccountsRepository();
+        this.otpRepo = new OtpRepository();
+    }
 
     async register(name: string, email: string, password: string): Promise<User> {
         const existingUser = await this.authRepo.findByEmail(email);
@@ -176,44 +192,116 @@ export class AuthService {
         return { msg: "Logged out" };
     }
 
-    async forgotPassword(email: string, baseResetUrl?: string) {
+    async requestPasswordReset(
+        email: string,
+        ipAddress?: string,
+        userAgent?: string
+    ): Promise<{ success: boolean; message: string }> {
         const user = await this.authRepo.findByEmail(email);
         if (!user) {
-            return { msg: "If that email exists, a reset link has been sent" };
+            return { success: true, message: "If email exists, OTP will be sent" };
         }
 
-        const token = crypto.randomBytes(32).toString("hex");
-        const expiresInMinutes = parseInt(process.env.RESET_TOKEN_EXPIRES_MINUTES ?? "30", 10);
-
-        const appName = process.env.APP_NAME ?? "App";
-        const from = process.env.MAIL_FROM ?? process.env.SMTP_USER ?? "no-reply@example.com";
-        const resetUrl = `${process.env.FRONTEND_URL ?? "http://localhost:3000"}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
-
-        const subject = `${appName} - Password Reset`;
-        const text = `You requested a password reset. Open this link to reset your password:\n${resetUrl}\nToken: ${token}\nIf you did not request this, you can ignore this email.`;
-        const html = `<p>You requested a password reset.</p>
-                      <p><a href="${resetUrl}">${resetUrl}</a></p>
-                      <p><strong>Token:</strong> ${token}</p>
-                      <p>If you did not request this, you can ignore this email.</p>`;
-
-        if ((process.env.LOG_RESET_URL ?? 'true').toLowerCase() === 'true') {
-            console.log('[AuthService] Password reset URL:', resetUrl);
+        const canRequest = await this.otpRepo.checkRateLimit(user.id, OtpType.RESET_PASSWORD);
+        if (!canRequest) {
+            throw new BadRequestException("Too many requests. Please try again later.");
         }
 
-        await sendEmail({ from, to: email, subject, text, html });
+        const otp = await this.otpRepo.createOtp(
+            user.id,
+            OtpType.RESET_PASSWORD,
+            ipAddress,
+            userAgent
+        );
 
-        return { msg: "If that email exists, a reset link has been sent" };
+        const emailTemplate = emailTemplates.resetPassword(otp.code, user.name);
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: user.email,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+        });
+
+        return {
+            success: true,
+            message: "OTP sent to your email",
+        };
     }
 
-    async resetPassword(token: string, newPassword: string) {
-        const user = await this.authRepo.findByValidResetToken(token, new Date());
+    async verifyPasswordResetOtp(
+        email: string,
+        code: string
+    ): Promise<{ valid: boolean; token?: string; message?: string }> {
+        const user = await this.authRepo.findByEmail(email);
         if (!user) {
-            throw new NotFoundException("Invalid or expired reset token");
+            throw new NotFoundException("User not found");
         }
 
-        const salt = await bcrypt.genSalt(12);
-        const hashed = await bcrypt.hash(newPassword, salt);
+        const result = await this.otpRepo.verifyOtp(user.id, code, OtpType.RESET_PASSWORD);
+        
+        if (!result.valid) {
+            throw new BadRequestException(result.message || "Invalid OTP");
+        }
 
-        return { msg: "Password has been reset successfully" };
+        await this.otpRepo.markAsUsed(result.otp!.id);
+
+        const resetToken = jwt.sign(
+            { userId: user.id, purpose: "reset_password" },
+            process.env.JWT_SECRET_KEY as string,
+            { expiresIn: "15m" }
+        );
+
+        return {
+            valid: true,
+            token: resetToken,
+            message: "OTP verified successfully",
+        };
+    }
+
+    async resetPassword(
+        token: string,
+        newPassword: string
+    ): Promise<{ success: boolean; message: string }> {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY as string) as any;
+            
+            if (decoded.purpose !== "reset_password") {
+                throw new UnauthorizedException("Invalid token purpose");
+            }
+
+            const user = await this.authRepo.findById(decoded.userId);
+            if (!user) {
+                throw new NotFoundException("User not found");
+            }
+
+            const salt = await bcrypt.genSalt(12);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            const account = await this.accountsRepo.findByUserId(user.id);
+            if (!account) {
+                throw new NotFoundException("Account not found");
+            }
+
+            account.passwordHash = hashedPassword;
+            await this.accountsRepo.save(account);
+
+            const emailTemplate = emailTemplates.otpVerificationSuccess(user.name);
+            await transporter.sendMail({
+                from: process.env.SMTP_USER,
+                to: user.email,
+                subject: emailTemplate.subject,
+                html: emailTemplate.html,
+            });
+
+            return {
+                success: true,
+                message: "Password reset successfully",
+            };
+        } catch (error: any) {
+            if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+                throw new UnauthorizedException("Invalid or expired token");
+            }
+            throw error;
+        }
     }
 }
