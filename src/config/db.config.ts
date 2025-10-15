@@ -2,6 +2,16 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User, Account, AccountProvider, Token, Otp } from "../entities/User";
 import { Role, UserRole } from "../entities/Role";
+import { WorkSpaces, WorkspaceMembers } from "../entities/Workspaces";
+import { Board, BoardMember } from "../entities/Boards";
+import { List } from "../entities/Lists";
+import { Card, CardMember } from "../entities/Cards";
+import { Label } from "../entities/Labels";
+import { Checklist, ChecklistItem } from "../entities/Checklists";
+import { Comment } from "../entities/Comments";
+import { Attachment } from "../entities/Attachments";
+import { Activity } from "../entities/Activities";
+import { Notification } from "../entities/Notifications";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -22,7 +32,21 @@ export const AppDataSource = new DataSource({
     Token,
     Otp,
     Role,
-    UserRole
+    UserRole,
+    WorkSpaces,
+    WorkspaceMembers,
+    Board,
+    BoardMember,
+    List,
+    Card,
+    CardMember,
+    Label,
+    Checklist,
+    ChecklistItem,
+    Comment,
+    Attachment,
+    Activity,
+    Notification,
   ],
   migrations: [
     "src/migrations/**/*.ts",

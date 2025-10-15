@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs"
 import jwt, { SignOptions } from "jsonwebtoken"
 import crypto from "crypto"
 import dotenv from "dotenv"
+import { AppDataSource } from "../../config"
+import { UserRole } from "../../entities"
 
 dotenv.config()
 
@@ -28,5 +30,31 @@ export class AuthUtils {
 
     static generateRefreshToken(): string {
         return crypto.randomBytes(32).toString("hex")
+    }
+
+    static async getUserRolesAndPermissions(userId: string): Promise<{
+        roles: string[];
+        permissions: string[];
+    }> {
+        const userRoleRepo = AppDataSource.getRepository(UserRole);
+        
+        const userRoles = await userRoleRepo.find({
+            where: { userId },
+            relations: ["role", "role.permissions"]
+        });
+
+        const roles = userRoles.map(ur => ur.role.name);
+        const permissionsSet = new Set<string>();
+
+        userRoles.forEach(ur => {
+            ur.role.permissions?.forEach(permission => {
+                permissionsSet.add(`${permission.resource}:${permission.action}`);
+            });
+        });
+
+        return {
+            roles,
+            permissions: Array.from(permissionsSet)
+        };
     }
 }

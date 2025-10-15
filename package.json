@@ -60,6 +60,9 @@
     "dev": "nodemon --watch src --exec ts-node -r tsconfig-paths/register src/main.ts",
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/main.js",
-    "test": "jest --runInBand --verbose"
+    "test": "jest --runInBand --verbose",
+    "seed": "ts-node -r tsconfig-paths/register scripts/seed.ts",
+    "seed:rbac": "ts-node -r tsconfig-paths/register scripts/seed.ts rbac",
+    "seed:admin": "ts-node -r tsconfig-paths/register scripts/seed.ts admin"
   }
 }

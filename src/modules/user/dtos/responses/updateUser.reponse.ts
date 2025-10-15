@@ -4,7 +4,7 @@ export const UpdateUserResponseDto = z.object({
   id: z.string().uuid(),
   name: z.string(),
   email: z.string().email(),
-  isActive: z.boolean(),
+  isVerified: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

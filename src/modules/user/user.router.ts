@@ -16,7 +16,7 @@ import {
   UserItemDto,
   PaginationMetaDto
 } from "./dtos";
-import { autoBindUtil, validateRequestMiddleware, authMiddleware } from "../../common";
+import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
 
@@ -59,7 +59,8 @@ userRegistry.registerPath({
 });
 router.get(
   "/",
-  authMiddleware,
+  authenticate,
+  requirePermission("users", "read"),
   validateRequestMiddleware({query: GetUsersPaginationQuerySchema}),
   userController.getUsers
 );
@@ -82,7 +83,8 @@ userRegistry.registerPath({
 
 router.get(
   "/:id",
-  authMiddleware,
+  authenticate,
+  requirePermission("users", "read"),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()
@@ -113,7 +115,8 @@ userRegistry.registerPath({
 
 router.post(
   "/",
-  authMiddleware,
+  authenticate,
+  requirePermission("users", "create"),
   validateRequestMiddleware({ body: CreateUserDto }),
   userController.createUser
 );
@@ -143,7 +146,8 @@ userRegistry.registerPath({
 
 router.put(
   "/:id",
-  authMiddleware,
+  authenticate,
+  requirePermission("users", "update"),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()
@@ -173,7 +177,8 @@ userRegistry.registerPath({
 
 router.delete(
   "/:id",
-  authMiddleware,
+  authenticate,
+  requirePermission("users", "delete"),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()
