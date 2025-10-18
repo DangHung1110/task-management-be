@@ -24,7 +24,7 @@ export class ForbiddenException extends HttpException {
 }
 
 export class InternalServerException extends HttpException {
-  constructor() {
+  constructor(public readonly resource?: string) {
     super(StatusCodes.INTERNAL_SERVER_ERROR, "Error from the server");
   }
 }

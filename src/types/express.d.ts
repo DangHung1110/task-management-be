@@ -1,4 +1,6 @@
 import { User as UserEntity } from "../entities/User/user";
+import { BoardMember } from "../entities/Boards/boardMember.entities";
+import { WorkspaceMember } from "../entities/Workspaces/workspaceMember.entities";
 
 declare global {
     namespace Express {
@@ -9,8 +11,20 @@ declare global {
 
         interface Request {
             user?: User;
+            workspaceMembership?: WorkspaceMember;  
+            boardMembership?: BoardMember;  
         }
     }
 }
 
-export {};
+export interface AuthenticatedRequest extends Request {
+    user: {
+        userId: string;
+        email: string;
+        role: string;
+        status: string;
+        permissions?: string[];
+    };
+    workspaceMembership?: WorkspaceMember;
+    boardMembership?: BoardMember;
+}

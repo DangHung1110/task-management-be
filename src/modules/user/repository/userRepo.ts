@@ -1,8 +1,6 @@
 import { DataSource, Repository, UpdateResult, DeleteResult } from "typeorm";
 import { User } from "../../../entities";
-import { paginationUtils } from "../../../common";
-import { PaginationDto } from "../../../common";
-
+import { paginationUtils, PaginationDto} from "../../../common";
 export class UserRepo {
     private repo: Repository<User>;
     private pagination = new paginationUtils();

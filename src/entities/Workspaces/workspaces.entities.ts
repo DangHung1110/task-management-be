@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm";
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany, DeleteDateColumn } from "typeorm";
 import { BaseEntity } from "../Base";
 import { User } from "../User";
 import { WorkspaceMembers } from "./workspaceMember.entities";
@@ -28,8 +28,11 @@ export class WorkSpaces extends BaseEntity {
     isActive!: boolean;
 
     @Column({ type: "varchar", length: 50, nullable: true })
-    type!: string | null; // personal, team, enterprise
+    type!: string | null;
 
     @Column({ type: "jsonb", nullable: true })
     settings!: Record<string, any> | null;
+
+    @DeleteDateColumn({ name: "deletedAt" })
+    deletedAt?: Date;
 }

@@ -6,7 +6,7 @@ import { Board } from "./board.entities";
 export enum BoardMemberRole {
     ADMIN = "admin",
     MEMBER = "member",
-    OBSERVER = "observer"
+    OWNER = "owner"
 }
 
 @Entity("board_members")

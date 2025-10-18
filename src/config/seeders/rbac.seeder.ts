@@ -162,16 +162,12 @@ export async function seedRBAC() {
                 description: "System administrator with full access" 
             },
             { 
-                name: "manager", 
+                name: "owner", 
                 description: "Team manager with limited admin access" 
             },
             { 
                 name: "member", 
                 description: "Regular team member" 
-            },
-            { 
-                name: "viewer", 
-                description: "Read-only access" 
             }
         ];
 
@@ -201,7 +197,7 @@ export async function seedRBAC() {
                         p.resource === "cards" ||
                         p.resource === "lists"
                     );
-                    console.log(`  ✓ Assigned ${role.permissions.length} permissions to manager`);
+                    console.log(` Assigned ${role.permissions.length} permissions to manager`);
                     break;
                     
                 case "member":
@@ -210,12 +206,7 @@ export async function seedRBAC() {
                         ((p.resource === "boards" || p.resource === "cards" || p.resource === "lists") && 
                          (p.action === "create" || p.action === "update"))
                     );
-                    console.log(`  ✓ Assigned ${role.permissions.length} permissions to member`);
-                    break;
-                    
-                case "viewer":
-                    role.permissions = permissions.filter(p => p.action === "read");
-                    console.log(`  ✓ Assigned ${role.permissions.length} permissions to viewer`);
+                    console.log(`Assigned ${role.permissions.length} permissions to member`);
                     break;
             }
 
