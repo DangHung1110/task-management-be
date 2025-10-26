@@ -59,7 +59,6 @@ const workSpacesController = new WorkSpacesController(workSpacesService);
 const router = express.Router({ mergeParams: true });
 autoBindUtil(workSpacesController);
 
-// GET /work-spaces - List all workspaces (with pagination)
 workSpacesRegistry.registerPath({
     method: "get",
     path: "/work-spaces",
@@ -76,12 +75,10 @@ workSpacesRegistry.registerPath({
 router.get(
     "/",
     authenticate,
-    requirePermission("workspaces", "read"),
     validateRequestMiddleware({ query: GetWorkSpacesPaginationQuerySchema }),
     workSpacesController.getWorkSpaces
 );
 
-// GET /work-spaces/:workspaceId - Get workspace by ID
 workSpacesRegistry.registerPath({
     method: "get",
     path: "/work-spaces/{workspaceId}",
@@ -100,12 +97,10 @@ workSpacesRegistry.registerPath({
 router.get(
     "/:workspaceId",
     authenticate,
-    requirePermission("workspaces", "read"),
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER, WorkSpaceMemberEnum.ADMIN, WorkSpaceMemberEnum.MEMBER]),
+    checkWorkspacePermission(["owner", "member"]),
     workSpacesController.getWorkSpaceById
 );
 
-// POST /work-spaces - Create new workspace
 workSpacesRegistry.registerPath({
     method: "post",
     path: "/work-spaces",
@@ -128,12 +123,10 @@ workSpacesRegistry.registerPath({
 router.post(
     "/",
     authenticate,
-    requirePermission("workspaces", "create"),
     validateRequestMiddleware({ body: WorkSpaceCreateRequestSchema }),
     workSpacesController.createWorkSpace
 );
 
-// PUT /work-spaces/:workspaceId - Update workspace (Owner or Admin)
 workSpacesRegistry.registerPath({
     method: "put",
     path: "/work-spaces/{workspaceId}",
@@ -159,13 +152,11 @@ workSpacesRegistry.registerPath({
 router.put(
     "/:workspaceId",
     authenticate,
-    requirePermission("workspaces", "update"),
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER, WorkSpaceMemberEnum.ADMIN]),
+    checkWorkspacePermission(["owner", "member"]),
     validateRequestMiddleware({ body: WorkSpaceUpdateRequestSchema }),
     workSpacesController.updateWorkSpace
 );
 
-// DELETE /work-spaces/:workspaceId/soft - Soft delete workspace (Owner only)
 workSpacesRegistry.registerPath({
     method: "delete",
     path: "/work-spaces/{workspaceId}/soft",
@@ -184,12 +175,10 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/soft",
     authenticate,
-    requirePermission("workspaces", "delete"),
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER]),
+    checkWorkspacePermission(["owner"]),
     workSpacesController.shoftDeleteWorkSpace
 );
 
-// DELETE /work-spaces/:workspaceId/hard - Hard delete workspace (Owner only)
 workSpacesRegistry.registerPath({
     method: "delete",
     path: "/work-spaces/{workspaceId}/hard",
@@ -208,12 +197,10 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/hard",
     authenticate,
-    requirePermission("workspaces", "delete"),
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER]),
+    checkWorkspacePermission(["owner"]),
     workSpacesController.hardDeleteWorkSpace
 );
 
-// PATCH /work-spaces/:workspaceId/restore - Restore soft deleted workspace (Owner only)
 workSpacesRegistry.registerPath({
     method: "patch",
     path: "/work-spaces/{workspaceId}/restore",
@@ -232,10 +219,9 @@ workSpacesRegistry.registerPath({
 router.patch(
     "/:workspaceId/restore",
     authenticate,
-    requirePermission("workspaces", "delete"),
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER]),
+    checkWorkspacePermission(["owner"]),
     workSpacesController.restoreWorkSpace
 );
 
-export { router as workSpacesRouter };
+export const workSpacesRouter = router;
 

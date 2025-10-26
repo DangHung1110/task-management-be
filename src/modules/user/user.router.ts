@@ -16,7 +16,7 @@ import {
   UserItemDto,
   PaginationMetaDto
 } from "./dtos";
-import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission } from "../../common";
+import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission, checkIsOwnerOrAdmin } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
 
@@ -84,7 +84,7 @@ userRegistry.registerPath({
 router.get(
   "/:id",
   authenticate,
-  requirePermission("users", "read"),
+  checkIsOwnerOrAdmin("id"),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()
@@ -147,7 +147,7 @@ userRegistry.registerPath({
 router.put(
   "/:id",
   authenticate,
-  requirePermission("users", "update"),
+  checkIsOwnerOrAdmin("id"),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()

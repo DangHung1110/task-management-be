@@ -32,6 +32,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         }
 
         const decoded = jwt.verify(token, jwtSecret) as any;
+        console.log("Decoded token:", decoded);
         
         const userRepo = AppDataSource.getRepository(User);
         const user = await userRepo.findOne({
@@ -40,10 +41,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
         if (!user) {
             throw new UnauthorizedException("User not found");
-        }
-
-        if (!user.isVerified) {
-            throw new UnauthorizedException("User not verified");
         }
 
         const { roles, permissions } = await AuthUtils.getUserRolesAndPermissions(user.id);

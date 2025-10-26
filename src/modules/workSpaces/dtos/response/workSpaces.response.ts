@@ -19,6 +19,7 @@ export const WorkSpacesResponseSchema = z.object({
     description: z.string().nullable(),
     owner: ownerInfSchema,
     members: z.array(memberInfoSchema),
+    userRole: z.enum(['owner', 'admin', 'member']).optional(), // Role của user hiện tại trong workspace này
     isActive: z.boolean(),
     createdAt: z.date(),
     updatedAt: z.date(),

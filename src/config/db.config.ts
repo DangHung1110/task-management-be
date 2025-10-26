@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User, Account, AccountProvider, Token, Otp } from "../entities/User";
-import { Role, UserRole } from "../entities/Role";
+import { Role, UserRole, Permission } from "../entities/Role";
 import { WorkSpaces, WorkspaceMembers } from "../entities/Workspaces";
 import { Board, BoardMember } from "../entities/Boards";
 import { List } from "../entities/Lists";
@@ -33,6 +33,7 @@ export const AppDataSource = new DataSource({
     Otp,
     Role,
     UserRole,
+    Permission,
     WorkSpaces,
     WorkspaceMembers,
     Board,

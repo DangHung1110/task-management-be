@@ -1,6 +1,6 @@
 import { WorkSpacesService } from "./workSpaces.service";
 import { Request, Response } from "express";
-import { HttpResponseDto } from "../../common";
+import { ConflictException, HttpResponseDto } from "../../common";
 import {
     GetWorkSpacesPaginationQueryDtoType,
     WorkSpacesListResponseType,
@@ -13,12 +13,17 @@ export class WorkSpacesController {
 
     async getWorkSpaces(req: Request): Promise<Response> {
         const queryData = req.query as GetWorkSpacesPaginationQueryDtoType;
-        const result = await this.workSpacesService.getWorkSpaces(queryData);
+        const user = (req as any).user;
+        
+        const userId = user?.roles?.includes('admin') ? undefined : user?.id;
+        
+        const result = await this.workSpacesService.getWorkSpaces(queryData, userId);
         return new HttpResponseDto().success<WorkSpacesListResponseType>({ data: result });
     }
 
     async getWorkSpaceById(req: Request): Promise<Response> {
-        const workSpace = await this.workSpacesService.getWorkSpaceByID(req.params.id);
+        const userId = (req as any).user?.id;
+        const workSpace = await this.workSpacesService.getWorkSpaceByID(req.params.workspaceId, userId);
         return new HttpResponseDto().success<WorkSpacesResponseType>({ data: workSpace });
     }
 
@@ -26,7 +31,7 @@ export class WorkSpacesController {
         const userId = (req as any).user?.id; 
         
         if (!userId) {
-            throw new Error('User not authenticated');
+            throw new ConflictException('User not authenticated');
         }
 
         const data = workSpaceCreateRequestDto.parse(req.body);
@@ -35,22 +40,23 @@ export class WorkSpacesController {
     }
 
     async updateWorkSpace(req: Request): Promise<Response> {
-        const updatedWorkSpace = await this.workSpacesService.updateWorkSpace(req.params.id, req.body);
+        const userId = (req as any).user?.id;
+        const updatedWorkSpace = await this.workSpacesService.updateWorkSpace(req.params.workspaceId, req.body, userId);
         return new HttpResponseDto().success<WorkSpacesResponseType>({ data: updatedWorkSpace });
     }
 
     async shoftDeleteWorkSpace(req: Request): Promise<Response> {
-        await this.workSpacesService.shoftDateleWorkSapce(req.params.id);
+        await this.workSpacesService.shoftDateleWorkSapce(req.params.workspaceId);
         return new HttpResponseDto().success<string>({ data: 'WorkSpace soft deleted successfully' });
     }
 
     async hardDeleteWorkSpace(req: Request): Promise<Response> {
-        await this.workSpacesService.hardDeleteWorkSpace(req.params.id);
+        await this.workSpacesService.hardDeleteWorkSpace(req.params.workspaceId);
         return new HttpResponseDto().success<string>({ data: 'WorkSpace hard deleted successfully' });
     }
 
     async restoreWorkSpace(req: Request): Promise<Response> {
-        await this.workSpacesService.restoreWorkSpace(req.params.id);
+        await this.workSpacesService.restoreWorkSpace(req.params.workspaceId);
         return new HttpResponseDto().success<string>({ data: 'WorkSpace restored successfully' });
     }
 }

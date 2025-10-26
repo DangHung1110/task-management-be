@@ -5,7 +5,6 @@ import { WorkSpaces } from "./workspaces.entities";
 
 export enum WorkspaceMemberRole {
     OWNER = "owner",
-    ADMIN = "admin",
     MEMBER = "member",
 }
 

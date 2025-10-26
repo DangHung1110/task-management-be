@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, JoinColumn, OneToMany, DeleteDateColumn } fr
 import { BaseEntity } from "../Base";
 import { User } from "../User";
 import { WorkspaceMembers } from "./workspaceMember.entities";
+import { Board } from "../Boards";
 
 @Entity("workspaces")
 export class WorkSpaces extends BaseEntity {
@@ -20,6 +21,9 @@ export class WorkSpaces extends BaseEntity {
 
     @OneToMany(() => WorkspaceMembers, member => member.workspace)
     members!: WorkspaceMembers[];
+
+    @OneToMany(() => Board, board => board.workspace)
+    boards!: Board[];
 
     @Column({ type: "varchar", length: 255, nullable: true })
     logoUrl!: string | null;

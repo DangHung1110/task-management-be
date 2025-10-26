@@ -13,7 +13,7 @@ export class UserRepo {
         if (withRelations) {
             return this.repo.findOne({
                 where: { id },
-                relations: ["accounts", "accountProviders", "roles", "tokens"]
+                relations: ["accounts", "accountProviders", "userRoles", "userRoles.role", "tokens"]
             });
         }
         return this.repo.findOne({ where: { id } });
@@ -23,7 +23,7 @@ export class UserRepo {
         if (withRelations) {
             return this.repo.findOne({
                 where: { email },
-                relations: ["accounts", "accountProviders", "roles", "tokens"]
+                relations: ["accounts", "accountProviders", "userRoles", "userRoles.role", "tokens"]
             });
         }
         return this.repo.findOne({ where: { email } });
@@ -35,7 +35,7 @@ export class UserRepo {
     }> {
         const { skip, take } = this.pagination.extractTakeSkip(pagination);
         const query = this.repo.createQueryBuilder("user")
-            .leftJoinAndSelect("user.roles", "userRoles")
+            .leftJoinAndSelect("user.userRoles", "userRoles")
             .leftJoinAndSelect("userRoles.role", "role")
             .skip(skip)
             .take(take)
@@ -84,7 +84,7 @@ export class UserRepo {
     async findByIdWithRoles(id: string): Promise<User | null> {
         return this.repo.findOne({
             where: { id },
-            relations: ["roles", "roles.role"]
+            relations: ["userRoles", "userRoles.role"]
         });
     }
 

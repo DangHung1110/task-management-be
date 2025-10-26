@@ -5,3 +5,5 @@ export * from "./permission.middleware";
 export * from "./role.middleware";
 export * from "./requestContext.middleware";
 export * from "./checkWorkspacePermission.middleware";
+export * from "./checkBoardPermission.middleware";
+export * from "./checkOwner.middleware";

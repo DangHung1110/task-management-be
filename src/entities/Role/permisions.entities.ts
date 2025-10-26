@@ -1,29 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, Column, ManyToOne, JoinColumn } from "typeorm";
+import { BaseEntity } from "../Base";
 import { Role } from "./role";
 
 @Entity("permissions")
-export class Permission {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string;
-
-    @Column({ type: "varchar", unique: true })
-    name!: string; 
+export class Permission extends BaseEntity {
+    @Column({ type: "varchar" })
+    resource!: string;
 
     @Column({ type: "varchar" })
-    resource!: string; 
+    action!: string;
 
-    @Column({ type: "varchar" })
-    action!: string; 
+    @Column({ type: "uuid" })
+    roleId!: string;
 
-    @Column({ type: "varchar", nullable: true })
-    description!: string;
-
-    @ManyToMany(() => Role, role => role.permissions)
-    roles!: Role[];
-
-    @CreateDateColumn()
-    createdAt!: Date;
-
-    @UpdateDateColumn()
-    updatedAt!: Date;
+    @ManyToOne(() => Role, role => role.permissions, { onDelete: "CASCADE" })
+    @JoinColumn({ name: "roleId" })
+    role!: Role;
 }

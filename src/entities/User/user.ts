@@ -3,6 +3,7 @@ import { Account } from "./account";
 import { Token } from "./token";
 import { Otp } from "./otp";
 import { UserRole } from "../Role/userRole";
+import { AccountProvider } from "./accountProvider";
 
 @Entity("users")
 export class User {
@@ -35,6 +36,9 @@ export class User {
 
     @OneToMany(() => UserRole, userRole => userRole.user)
     userRoles!: UserRole[];
+
+    @OneToMany(() => AccountProvider, accountProvider => accountProvider.user)
+    accountProviders!: AccountProvider[];
 
     @CreateDateColumn()
     createdAt!: Date;

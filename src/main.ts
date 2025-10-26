@@ -12,6 +12,7 @@ import { routers as moduleRouters } from "./modules/index";
 import { appEnv } from "./config/app.config";
 import passport from "./config/passport.config";
 import { AppDataSource } from "./config/db.config";
+import { runAllSeeders } from "./config/seeders";
 import requestContextMiddleware from './common/middlewares/requestContext.middleware';
 
 const app: Express = express();
@@ -39,12 +40,16 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 AppDataSource.initialize()
-  .then(() => {
+  .then(async () => {
+    // Run seeders to create admin user and roles
+    await runAllSeeders();
+
     const healCheckRouterInstance = new moduleRouters.healthCheckRouter();
     
     app.use("/health-check", healCheckRouterInstance.router);
     app.use("/auth", moduleRouters.authRouter);
     app.use("/users", moduleRouters.userRouter);
+    app.use("/work-spaces", moduleRouters.workSpacesRouter);
 
     app.use(openAPIRouter);
 

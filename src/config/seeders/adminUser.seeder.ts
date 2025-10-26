@@ -11,34 +11,43 @@ export async function seedAdminUser() {
     const roleRepo = AppDataSource.getRepository(Role);
     const userRoleRepo = AppDataSource.getRepository(UserRole);
 
-    console.log(" Seeding admin user...");
+    console.log("👤 Seeding system admin user...");
 
     try {
+        // Get admin credentials from environment variables
+        const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
+        const adminPassword = process.env.ADMIN_PASSWORD || "Admin@123";
+        const adminName = process.env.ADMIN_NAME || "System Administrator";
+
         const existingAdmin = await userRepo.findOne({ 
-            where: { email: "admin@example.com" } 
+            where: { email: adminEmail } 
         });
 
         if (existingAdmin) {
-            console.log(" Admin user already exists\n");
+            console.log("   • Admin user already exists");
+            console.log(`   • Email: ${adminEmail}\n`);
             return existingAdmin;
         }
 
+        // Create admin user
         const user = await userRepo.save({
-            email: "admin@example.com",
-            name: "Admin User",
+            email: adminEmail,
+            name: adminName,
             isActive: true,
             isVerified: true
         });
-        console.log(" Created admin user");
+        console.log("   ✓ Created admin user");
 
-        const hashedPassword = await bcrypt.hash("Admin@123", 10);
+        // Create admin account with hashed password
+        const hashedPassword = await bcrypt.hash(adminPassword, 12);
         await accountRepo.save({
             user: user,
             username: user.email,
             passwordHash: hashedPassword
         });
-        console.log("Created admin account");
+        console.log("   ✓ Created admin account");
 
+        // Assign admin role
         const adminRole = await roleRepo.findOne({ 
             where: { name: "admin" } 
         });
@@ -51,14 +60,15 @@ export async function seedAdminUser() {
             userId: user.id,
             roleId: adminRole.id
         });
-        console.log("Assigned admin role");
-        console.log("Admin user created successfully");
-        console.log("Email: admin@example.com");
-        console.log("Password: Admin@123\n");
+        console.log("   ✓ Assigned system admin role");
+        console.log("\n✅ System admin created successfully:");
+        console.log(`   📧 Email: ${adminEmail}`);
+        console.log(`   🔑 Password: ${adminPassword}`);
+        console.log(`   ⚠️  Please change the password after first login!\n`);
 
         return user;
     } catch (error) {
-        console.error("Error seeding admin user:", error);
+        console.error("❌ Error seeding admin user:", error);
         throw error;
     }
 }

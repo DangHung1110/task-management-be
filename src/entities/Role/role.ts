@@ -1,12 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, Column, OneToMany } from "typeorm";
+import { BaseEntity } from "../Base";
 import { UserRole } from "./userRole";
 import { Permission } from "./permisions.entities";
 
 @Entity("roles")
-export class Role {
-    @PrimaryGeneratedColumn("uuid")
-    id!: string;
-
+export class Role extends BaseEntity {
     @Column({ type: "varchar", unique: true })
     name!: string;
 
@@ -16,17 +14,6 @@ export class Role {
     @OneToMany(() => UserRole, userRole => userRole.role)
     userRoles!: UserRole[];
 
-    @ManyToMany(() => Permission, (permission: { roles: any; }) => permission.roles)
-    @JoinTable({
-        name: "role_permissions",
-        joinColumn: { name: "roleId", referencedColumnName: "id" },
-        inverseJoinColumn: { name: "permissionId", referencedColumnName: "id" }
-    })
+    @OneToMany(() => Permission, permission => permission.role)
     permissions!: Permission[];
-
-    @CreateDateColumn()
-    createdAt!: Date;
-
-    @UpdateDateColumn()
-    updatedAt!: Date;
 }

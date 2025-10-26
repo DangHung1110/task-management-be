@@ -14,7 +14,7 @@ import { Registries } from "../modules/index";
 export function generateOpenAPIDocument() {
   const registry = new OpenAPIRegistry([...Registries]);
 
-  registry.registerComponent("securitySchemes", "bearerAuth", {
+  registry.registerComponent("securitySchemes", "BearerAuth", {
     type: "http",
     scheme: "bearer",
     bearerFormat: "JWT",

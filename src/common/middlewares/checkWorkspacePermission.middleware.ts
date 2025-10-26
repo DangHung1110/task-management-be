@@ -6,12 +6,11 @@ import { AuthenticatedRequest } from "./auth.middlewares";
 
 export const WorkSpaceMemberEnum = {
     OWNER: "owner",
-    ADMIN: "admin",
     MEMBER: "member"
 }
 
-export const checkWorkspacePermission = (requiredRoles: string[]) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+export const checkWorkspacePermission = (requiredRoles: ('owner' | 'member')[]) => {
+    return async (req: Request, _res: Response, next: NextFunction) => {
         try { 
             const user = req?.user;
             const { workspaceId } = req.params;
@@ -24,6 +23,11 @@ export const checkWorkspacePermission = (requiredRoles: string[]) => {
                 throw new ForbiddenException("Workspace ID is required");
             }
 
+            const isSystemAdmin = user.roles?.includes("admin");
+            if (isSystemAdmin) {
+                return next();
+            }
+
             const workspaceMemberRepo = AppDataSource.getRepository(WorkspaceMembers);
             const membership = await workspaceMemberRepo.findOne({
                 where: {
@@ -34,11 +38,11 @@ export const checkWorkspacePermission = (requiredRoles: string[]) => {
             });
 
             if(!membership) {
-                throw new ForbiddenException("User is not a member of this workspace");
+                throw new ForbiddenException("You are not a member of this workspace");
             }
 
-            if(!requiredRoles.includes(membership.role)) {
-                throw new ForbiddenException("User does not have the required role");
+            if (!requiredRoles.includes(membership.role as 'owner' | 'member')) {
+                throw new ForbiddenException(`Insufficient permissions. Required roles: ${requiredRoles.join(", ")}`);
             }
             next();
         } catch (error) {

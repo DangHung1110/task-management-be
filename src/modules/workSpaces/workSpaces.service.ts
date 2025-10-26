@@ -14,7 +14,13 @@ export class WorkSpacesService {
         private readonly workSpacesRepo: WorkSpacesRepo
     ) {}
 
-    private transformWorkSpaceToResponse(workSpace: WorkSpaces): WorkSpacesResponseType {
+    private transformWorkSpaceToResponse(workSpace: WorkSpaces, currentUserId?: string): WorkSpacesResponseType {
+        let userRole: 'owner' | 'member' | undefined;
+        if (currentUserId) {
+            const membership = workSpace.members?.find(m => m.userId === currentUserId);
+            userRole = membership?.role as 'owner' | 'member'; 
+        }
+
         return {
             id: workSpace.id,
             name: workSpace.name,
@@ -28,16 +34,17 @@ export class WorkSpacesService {
                 .map(member => ({
                     id: member.user.id,
                     name: member.user.name,
-                    role: member.role as 'admin' | 'member',
+                    role: member.role as 'member', 
                     joinedAt: member.joinedAt
                 })) || [],
+            userRole,
             isActive: workSpace.isActive,
             createdAt: workSpace.createdAt,
             updatedAt: workSpace.updatedAt
         };
     }
 
-    async getWorkSpaces(query: GetWorkSpacesPaginationQueryDtoType): Promise<WorkSpacesListResponseType> {
+    async getWorkSpaces(query: GetWorkSpacesPaginationQueryDtoType, userId?: string): Promise<WorkSpacesListResponseType> {
         const paginationInput = {
             page: query.page ? Number(query.page) : 1,
             limit: query.limit ? Number(query.limit) : 5,
@@ -45,13 +52,13 @@ export class WorkSpacesService {
             total: undefined 
         };
 
-        const { workSpaces, pagination: paginationInfo } = await this.workSpacesRepo.getWorkSpaces(paginationInput);
+        const { workSpaces, pagination: paginationInfo } = await this.workSpacesRepo.getWorkSpaces(paginationInput, userId);
         
         if (!workSpaces || workSpaces.length === 0) {
             throw new NotFoundException('WorkSpaces not found');
         }
 
-        const transformedData = workSpaces.map(ws => this.transformWorkSpaceToResponse(ws));
+        const transformedData = workSpaces.map(ws => this.transformWorkSpaceToResponse(ws, userId));
 
         const result = WorkSpacesListResponseSchema.parse({
             data: transformedData,
@@ -61,12 +68,12 @@ export class WorkSpacesService {
         return result;
     }
 
-    async getWorkSpaceByID(id: string): Promise<WorkSpacesResponseType> {
+    async getWorkSpaceByID(id: string, userId?: string): Promise<WorkSpacesResponseType> {
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(id);
         if (!workSpace) {
             throw new NotFoundException('WorkSpace not found');
         }
-        return this.transformWorkSpaceToResponse(workSpace);
+        return this.transformWorkSpaceToResponse(workSpace, userId);
     }
 
     async createWorkSpace(data: WorkSpaceCreateRequestDtoType, ownerId: string): Promise<WorkSpacesResponseType> {
@@ -75,14 +82,14 @@ export class WorkSpacesService {
             ownerId: ownerId,
         };
         
-        const newWorkSpace = await this.workSpacesRepo.createWorkSpace(workSpaceData);
+        const newWorkSpace = await this.workSpacesRepo.createWorkSpace(workSpaceData, ownerId);
         if (!newWorkSpace) {
             throw new InternalServerException('Failed to create WorkSpace');
         }
-        return this.transformWorkSpaceToResponse(newWorkSpace);
+        return this.transformWorkSpaceToResponse(newWorkSpace, ownerId);
     }
 
-    async updateWorkSpace(id: string, data: Partial<WorkSpaces>): Promise<WorkSpacesResponseType> {
+    async updateWorkSpace(id: string, data: Partial<WorkSpaces>, userId?: string): Promise<WorkSpacesResponseType> {
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(id);
         if (!workSpace) {
             throw new NotFoundException('WorkSpace not found');
@@ -93,7 +100,7 @@ export class WorkSpacesService {
         if (!updatedWorkSpace) {
             throw new InternalServerException('Failed to retrieve updated WorkSpace');
         }
-        return this.transformWorkSpaceToResponse(updatedWorkSpace);
+        return this.transformWorkSpaceToResponse(updatedWorkSpace, userId);
     }
 
     async shoftDateleWorkSapce(id: string): Promise<void> {

@@ -1,17 +1,20 @@
-import { WorkSpaces } from "../../../entities";
+import { WorkSpaces, WorkspaceMembers } from "../../../entities";
 import { DataSource, Repository, UpdateResult, DeleteResult } from "typeorm";
 import { paginationUtils, PaginationDto} from "../../../common";
+import { WorkspaceMemberRole } from "../../../entities";
 
 export class WorkSpacesRepo {
     private repo: Repository<WorkSpaces>;
+    private workspaceMemberRepo: Repository<WorkspaceMembers>;
     private pagination: paginationUtils;
 
     constructor(ds: DataSource) {
         this.repo = ds.getRepository(WorkSpaces);
+        this.workspaceMemberRepo = ds.getRepository(WorkspaceMembers);
         this.pagination = new paginationUtils();
     }
 
-    async getWorkSpaces(pagination: PaginationDto): Promise<{
+    async getWorkSpaces(pagination: PaginationDto, userId?: string): Promise<{
         workSpaces: WorkSpaces[];
         pagination: PaginationDto;
     }> {
@@ -19,10 +22,19 @@ export class WorkSpacesRepo {
         const query = this.repo.createQueryBuilder("workSpaces")
             .leftJoinAndSelect("workSpaces.owner", "owner")
             .leftJoinAndSelect("workSpaces.members", "members")
-            .leftJoinAndSelect("members.user", "user")
+            .leftJoinAndSelect("members.user", "memberUser")
+            .leftJoinAndSelect("workSpaces.boards", "boards")
             .skip(skip)
             .take(take)
             .orderBy("workSpaces.createdAt", "DESC");
+
+        // Filter workspaces where user is a member (unless no userId provided - for admin)
+        if (userId) {
+            query.andWhere(
+                "members.userId = :userId AND members.isActive = :isActive",
+                { userId, isActive: true }
+            );
+        }
 
         if (pagination.search) {
             query.andWhere(
@@ -44,9 +56,20 @@ export class WorkSpacesRepo {
         });
     }
 
-    async createWorkSpace(data: Partial<WorkSpaces>): Promise<WorkSpaces> {
+    async createWorkSpace(data: Partial<WorkSpaces>, ownerId: string): Promise<WorkSpaces> {
         const workSpace = this.repo.create(data);
         const saved = await this.repo.save(workSpace);
+        
+        // Automatically add owner as a workspace member with 'owner' role
+        const ownerMember = this.workspaceMemberRepo.create({
+            workspaceId: saved.id,
+            userId: ownerId,
+            role: WorkspaceMemberRole.OWNER,
+            isActive: true,
+            joinedAt: new Date()
+        });
+        await this.workspaceMemberRepo.save(ownerMember);
+        
         return this.findWorkSpaceById(saved.id) as Promise<WorkSpaces>;
     }
 
