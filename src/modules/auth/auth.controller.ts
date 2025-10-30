@@ -73,9 +73,11 @@ export class AuthController {
           sameSite: "strict" as const,
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         };
+
         if (refreshToken) res.cookie("refreshToken", refreshToken, cookieOptions);
-        const response = new ServiceResponse(ResponseStatus.Success, "Login with Google successful", { accessToken, user: req.user }, 200);
-        return this.httpResponse.success(response);
+        return res.redirect(`${process.env.FE_URL}/oauth-success?accessToken=${accessToken}`);
+        // const response = new ServiceResponse(ResponseStatus.Success, `Login with Google successful`, { accessToken, user: req.user }, 200);
+        // return this.httpResponse.success(response);
     }
 
     async facebookLogin(req: Request, res: Response, next: NextFunction) {
@@ -87,8 +89,9 @@ export class AuthController {
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         };
         if (refreshToken) res.cookie("refreshToken", refreshToken, cookieOptions);
-        const response = new ServiceResponse(ResponseStatus.Success, "Login with Facebook successful", { accessToken, user: req.user }, 200);
-        return this.httpResponse.success(response);
+        return res.redirect(`${process.env.FE_URL}/oauth-success?accessToken=${accessToken}`);
+        // const response = new ServiceResponse(ResponseStatus.Success, "Login with Facebook successful", { accessToken, user: req.user }, 200);
+        // return this.httpResponse.success(response);
     }
 
     async logout(req: Request, res: Response, next: NextFunction) {

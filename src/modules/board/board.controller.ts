@@ -28,7 +28,7 @@ export class BoardController {
         return new HttpResponseDto().success<BoardResponseType>({ data: board });
     }
 
-    async createBoard(req: Request): Promise<Response> {
+    async createBoard(req: Request){
         const userId = req.user?.id;
         if (!userId) {
             throw new UnauthorizedException('User not authenticated');
@@ -36,7 +36,8 @@ export class BoardController {
         const {workspaceId} = req.params;
         const data = req.body as CreateBoardRequestDtoType;
         const newBoard = await this.boardService.createBoard({...data, workspaceId}, userId);
-        return new HttpResponseDto().created<BoardResponseType>({ data: newBoard });
+        console.log('New Board Created:', newBoard);
+        return new HttpResponseDto().success<BoardResponseType>({ data: newBoard });
     }
 
     async updateBoard(req: Request): Promise<Response> {

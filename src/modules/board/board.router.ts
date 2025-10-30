@@ -127,7 +127,7 @@ boardRegistry.registerPath({
     ),
 });
 router.post(
-    "/workspaces/:workspaceId/boards",
+    "/:workspaceId/boards",
     authenticate,
     checkWorkspacePermission(["owner", "member"]),
     validateRequestMiddleware({ body: CreateBoardRequestSchema }),

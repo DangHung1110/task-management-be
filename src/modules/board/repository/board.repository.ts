@@ -1,26 +1,30 @@
 import { Repository, DataSource, SelectQueryBuilder } from "typeorm";
 import { Board, BoardMember, BoardMemberRole} from "../../../entities";
-import { PaginationDto } from "../../../common";
+import { PaginationDto, paginationUtils } from "../../../common";
 
 export class BoardRepo {
     private repo: Repository<Board>;
     private boardMemberRepo: Repository<BoardMember>;
-    private pagination: any; 
+    private pagination: paginationUtils; 
 
     constructor(ds: DataSource) {
         this.repo = ds.getRepository(Board);
         this.boardMemberRepo = ds.getRepository(BoardMember);
+        this.pagination = new paginationUtils();
     }
 
     async getBoards(pagination: PaginationDto, userId?: string, workspaceId?: string, search?: string): Promise<{
         boards: Board[];
         pagination: PaginationDto;
     }> {
+        const { skip, take } = this.pagination.extractTakeSkip(pagination);
         const query = this.repo.createQueryBuilder("board")
             .leftJoinAndSelect("board.workspace", "workspace")
             .leftJoinAndSelect("board.owner", "owner")
             .leftJoinAndSelect("board.members", "members")
             .leftJoinAndSelect("members.user", "memberUser")
+            .skip(skip)
+            .take(take)
             .where("board.isActive = :isActive", { isActive: true });
 
         if (workspaceId) {
@@ -45,21 +49,14 @@ export class BoardRepo {
             );
         }
 
-        const [boards, total] = await query
-            .orderBy("board.createdAt", "DESC")
-            .skip((pagination.page - 1) * pagination.limit)
-            .take(pagination.limit)
-            .getManyAndCount();
-
+        const [boards, total] = await query.getManyAndCount();
+        const paginationInfo = this.pagination.convertToPaginationDto(total);
         return {
             boards,
-            pagination: {
-                ...pagination,
-                total,
-            },
+            pagination: paginationInfo,
         };
     }
-
+ 
     async findBoardById(id: string): Promise<Board | null> {
         return this.repo.findOne({
             where: { id, isActive: true },

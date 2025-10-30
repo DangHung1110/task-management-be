@@ -61,7 +61,7 @@ autoBindUtil(workSpacesController);
 
 workSpacesRegistry.registerPath({
     method: "get",
-    path: "/work-spaces",
+    path: "/workspaces",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -81,7 +81,7 @@ router.get(
 
 workSpacesRegistry.registerPath({
     method: "get",
-    path: "/work-spaces/{workspaceId}",
+    path: "/workspaces/{workspaceId}",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -103,7 +103,7 @@ router.get(
 
 workSpacesRegistry.registerPath({
     method: "post",
-    path: "/work-spaces",
+    path: "/workspaces",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -129,7 +129,7 @@ router.post(
 
 workSpacesRegistry.registerPath({
     method: "put",
-    path: "/work-spaces/{workspaceId}",
+    path: "/workspaces/{workspaceId}",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -159,7 +159,7 @@ router.put(
 
 workSpacesRegistry.registerPath({
     method: "delete",
-    path: "/work-spaces/{workspaceId}/soft",
+    path: "/workspaces/{workspaceId}/soft",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -181,7 +181,7 @@ router.delete(
 
 workSpacesRegistry.registerPath({
     method: "delete",
-    path: "/work-spaces/{workspaceId}/hard",
+    path: "/workspaces/{workspaceId}/hard",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {
@@ -203,7 +203,7 @@ router.delete(
 
 workSpacesRegistry.registerPath({
     method: "patch",
-    path: "/work-spaces/{workspaceId}/restore",
+    path: "/workspaces/{workspaceId}/restore",
     tags: ["WorkSpaces"],
     security: [{ BearerAuth: [] }],
     request: {

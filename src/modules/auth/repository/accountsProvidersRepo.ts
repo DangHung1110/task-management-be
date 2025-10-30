@@ -8,20 +8,20 @@ export class AccountProviderRepository {
         this.repo = ds.getRepository(AccountProvider);
     }
 
-    findByProviderId(provider: ProviderType, providerId: string) {
+    async findByProviderId(provider: ProviderType, providerId: string) {
         return this.repo.findOne({ where: { provider, providerId }, relations: ["user"] });
     }
 
-    createAndSave(data: Partial<AccountProvider>) {
+    async createAndSave(data: Partial<AccountProvider>) {
         const provider = this.repo.create(data);
         return this.repo.save(provider);
     }
 
-    updateTokens(id: string, accessToken?: string, refreshToken?: string) {
+    async updateTokens(id: string, accessToken?: string, refreshToken?: string) {
         return this.repo.update({ id }, { accessToken, refreshToken });
     }
 
-    unlink(id: string) {
+    async unlink(id: string) {
         return this.repo.delete({ id });
     }
 }

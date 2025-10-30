@@ -60,7 +60,6 @@ export class WorkSpacesRepo {
         const workSpace = this.repo.create(data);
         const saved = await this.repo.save(workSpace);
         
-        // Automatically add owner as a workspace member with 'owner' role
         const ownerMember = this.workspaceMemberRepo.create({
             workspaceId: saved.id,
             userId: ownerId,

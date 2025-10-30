@@ -5,7 +5,7 @@ import { userRouter, userRegistry } from "./user/user.router";
 import { workSpacesRouter, workSpacesRegistry} from "./workSpaces/workSpaces.router";
 import { boardRouter, boardRegistry } from "./board/board.router";
 
-export const Registries = [healthCheckRegistry, authRegistry, userRegistry, workSpacesRegistry];
+export const Registries = [healthCheckRegistry, authRegistry, userRegistry, workSpacesRegistry, boardRegistry];
 
 export const routers = {
     authRouter,

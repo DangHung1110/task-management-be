@@ -5,14 +5,14 @@ export const boardResponseSchema = z.object({
     name: z.string(),
     description: z.string(),
     workSpaceId: z.string(),
-    workSpace: {
+    workSpace: z.object({
         id: z.string(),
         name: z.string(),
-    },
-    owner: {
+    }),
+    owner: z.object({
         id: z.string(),
         name: z.string(),
-    },
+    }),
     member: z.array(z.object({
         id: z.string(),
         name: z.string(),

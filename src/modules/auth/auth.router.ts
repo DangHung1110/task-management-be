@@ -213,7 +213,7 @@ router.get(
   passport.authenticate("google", {
     scope: ["email", "profile"],
     session: false,
-  })
+  }),
 );
 
 // GET /auth/google/callback
@@ -223,6 +223,7 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(LoginResponseSchema, "Login with Google successful"),
 });
+
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
@@ -236,12 +237,13 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(z.null(), "Redirect to Facebook OAuth"),
 });
+
 router.get(
   "/facebook",
   passport.authenticate("facebook", {
     scope: ["email", "public_profile"],
     session: false,
-  })
+  }),
 );
 
 // GET /auth/facebook/callback
@@ -251,6 +253,7 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(LoginResponseSchema, "Login with Facebook successful"),
 });
+
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", { failureRedirect: "/login", session: false }),
