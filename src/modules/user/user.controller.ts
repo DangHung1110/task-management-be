@@ -16,7 +16,7 @@ import { HttpResponseDto } from "../../common";
 export class UserController {
     constructor(private readonly userService: UserService) {}
     
-    async getUsers(req: Request): Promise<Response> {
+    async getUsers(req: Request, res: Response): Promise<Response> {
         const queryData = GetUsersPaginationQueryDto.parse(req.query);
         const result = await this.userService.getUsers(queryData);
         return new HttpResponseDto().success<GetUsersResponseDtoType>({ data: result });

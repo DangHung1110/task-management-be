@@ -5,6 +5,7 @@ import { z } from "zod";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { UserRepo } from "./repository";
+import { permissionEnum } from "../../config/seeders/rbac.seeder";
 import { 
   GetUsersPaginationQueryDto,
   GetUsersResponseDto,
@@ -16,7 +17,7 @@ import {
   UserItemDto,
   PaginationMetaDto
 } from "./dtos";
-import { autoBindUtil, validateRequestMiddleware, authMiddleware } from "../../common";
+import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission, checkIsOwnerOrAdmin } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
 
@@ -59,8 +60,9 @@ userRegistry.registerPath({
 });
 router.get(
   "/",
-  authMiddleware,
-  validateRequestMiddleware(GetUsersPaginationQuerySchema),
+  authenticate,
+  requirePermission(permissionEnum.USER.READ),
+  validateRequestMiddleware({query: GetUsersPaginationQuerySchema}),
   userController.getUsers
 );
 
@@ -82,10 +84,13 @@ userRegistry.registerPath({
 
 router.get(
   "/:id",
-  authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
+  authenticate,
+  checkIsOwnerOrAdmin("id"),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    }),
+  }),
   userController.getUserById
 );
 
@@ -111,8 +116,9 @@ userRegistry.registerPath({
 
 router.post(
   "/",
-  authMiddleware,
-  validateRequestMiddleware(CreateUserDto, "body"),
+  authenticate,
+  requirePermission(permissionEnum.USER.CREATE),
+  validateRequestMiddleware({ body: CreateUserDto }),
   userController.createUser
 );
 
@@ -141,11 +147,14 @@ userRegistry.registerPath({
 
 router.put(
   "/:id",
-  authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
-  validateRequestMiddleware(UpdateUserDto, "body"),
+  authenticate,
+  checkIsOwnerOrAdmin("id"),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    })
+  }),
+  validateRequestMiddleware({ body: UpdateUserDto }),
   userController.updateUser
 );
 
@@ -169,10 +178,13 @@ userRegistry.registerPath({
 
 router.delete(
   "/:id",
-  authMiddleware,
-  validateRequestMiddleware(z.object({
-    id: z.string().uuid()
-  }), "params"),
+  authenticate,
+  requirePermission(permissionEnum.USER.DELETE),
+  validateRequestMiddleware({
+    params: z.object({
+      id: z.string().uuid()
+    })
+  }),
   userController.deleteUser
 );
 

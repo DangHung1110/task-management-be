@@ -24,7 +24,7 @@ export class ForbiddenException extends HttpException {
 }
 
 export class InternalServerException extends HttpException {
-  constructor() {
+  constructor(public readonly resource?: string) {
     super(StatusCodes.INTERNAL_SERVER_ERROR, "Error from the server");
   }
 }
@@ -38,6 +38,12 @@ export class NotFoundException extends HttpException {
 export class UnauthorizedException extends HttpException {
   constructor(public readonly resource?: string) {
     super(StatusCodes.UNAUTHORIZED, `You are not authenticated because the token ${resource}`);
+  }
+}
+
+export class BadRequestException extends HttpException {
+  constructor(public readonly message: string) {
+    super(StatusCodes.BAD_REQUEST, message);
   }
 }
 

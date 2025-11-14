@@ -1,29 +1,65 @@
-
 import { Request, Response, NextFunction } from "express";
-import { AuthenticatedRequest} from "./auth.middlewares";
-import { ForbiddenException, UnauthorizedException} from "../exceptions";
+import { ForbiddenException, UnauthorizedException } from "../exceptions";
 
-export const checkRole = (required: string | string[]) => {
-    const allowed = Array.isArray(required) ? required : [required];
-
-    return (req: AuthenticatedRequest | Request, res: Response, next: NextFunction) => {
+export const requireRole = (...roles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
         try {
-            const r = req as AuthenticatedRequest;
-            const user = r.user;
+            const user = req.user;
 
-                    if (!user) {
-                        return next(new UnauthorizedException('Authentication required'));
-                    }
+            if (!user) {
+                throw new UnauthorizedException("User not authenticated");
+            }
 
-                    if (!allowed.includes(user.role)) {
-                        return next(new ForbiddenException('You do not have permission to access this resource'));
-                    }
+            if (!user.roles || user.roles.length === 0) {
+                throw new ForbiddenException("No roles assigned to user");
+            }
 
-                    return next();
-        } catch (err) {
-            return next(new ForbiddenException('You do not have permission to access this resource'));
+            const hasRole = roles.some(role => user.roles.includes(role));
+
+            if (!hasRole) {
+                throw new ForbiddenException(
+                    `Access denied: Require one of roles [${roles.join(", ")}]`
+                );
+            }
+
+            next();
+        } catch (error) {
+            next(error);
         }
     };
 };
 
-export const checkAuth = checkRole("admin");
+
+export const requireAllRoles = (...roles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const user = req.user;
+
+            if (!user) {
+                throw new UnauthorizedException("User not authenticated");
+            }
+
+            if (!user.roles || user.roles.length === 0) {
+                throw new ForbiddenException("No roles assigned to user");
+            }
+
+            const hasAllRoles = roles.every(role => user.roles.includes(role));
+
+            if (!hasAllRoles) {
+                const missingRoles = roles.filter(role => !user.roles.includes(role));
+                throw new ForbiddenException(
+                    `Access denied: Missing roles [${missingRoles.join(", ")}]`
+                );
+            }
+
+            next();
+        } catch (error) {
+            next(error);
+        }
+    };
+};
+
+
+export const requireAdmin = requireRole("admin");
+export const checkRole = requireRole;
+export const checkAuth = requireAdmin;

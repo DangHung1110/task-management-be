@@ -22,4 +22,5 @@ export class HttpResponseDto {
             message: exceptions.message
         })
     }
+
 }

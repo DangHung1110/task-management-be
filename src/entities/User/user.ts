@@ -1,26 +1,26 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from "typeorm";
 import { Account } from "./account";
-import { AccountProvider } from "./accountProvider";
 import { Token } from "./token";
-import { UserRole } from "../Role";
-import { BaseEntity } from "../Base";
+import { Otp } from "./otp";
+import { UserRole } from "../Role/userRole";
+import { AccountProvider } from "./accountProvider";
 
 @Entity("users")
-export class User extends BaseEntity {
-    @Column({ type: "varchar", unique: true, length: 150 })
+export class User {
+    @PrimaryGeneratedColumn("uuid")
+    id!: string;
+
+    @Column({ type: "varchar", unique: true })
     email!: string;
 
-    @Column({ type: "varchar", length: 100 })
+    @Column({ type: "varchar" })
     name!: string;
 
     @Column({ type: "varchar", nullable: true })
-    bio!: string;
+    avatar!: string;
 
-    @Column({ type: "varchar", nullable: true })
-    address!: string;
-
-    @Column({ type: "varchar", nullable: true })
-    avatarUrl!: string;
+    @Column({ type: "boolean", default: false })
+    isVerified!: boolean;
 
     @Column({ type: "boolean", default: true })
     isActive!: boolean;
@@ -28,12 +28,21 @@ export class User extends BaseEntity {
     @OneToMany(() => Account, account => account.user)
     accounts!: Account[];
 
-    @OneToMany(() => AccountProvider, ap => ap.user)
-    accountProviders!: AccountProvider[];
-
-    @OneToMany(() => UserRole, ur => ur.user)
-    roles!: UserRole[];
-
     @OneToMany(() => Token, token => token.user)
     tokens!: Token[];
+
+    @OneToMany(() => Otp, otp => otp.user)
+    otps!: Otp[];
+
+    @OneToMany(() => UserRole, userRole => userRole.user)
+    userRoles!: UserRole[];
+
+    @OneToMany(() => AccountProvider, accountProvider => accountProvider.user)
+    accountProviders!: AccountProvider[];
+
+    @CreateDateColumn()
+    createdAt!: Date;
+
+    @UpdateDateColumn()
+    updatedAt!: Date;
 }

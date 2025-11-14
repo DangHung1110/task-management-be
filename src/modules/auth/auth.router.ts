@@ -15,7 +15,6 @@ const RegisterRequestSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  age: z.number().optional(),
 });
 
 const UserSchema = z.object({
@@ -43,11 +42,24 @@ const ForgotPasswordRequestSchema = z.object({
   email: z.string().email().openapi({ example: "user@example.com" }),
 });
 
-const ResetPasswordRequestSchema = z.object({
-  token: z.string().min(1).openapi({ example: "<reset-token-from-email>" }),
-  password: z.string().min(6).openapi({ example: "newStrongPassword123" })
+const VerifyOtpRequestSchema = z.object({
+  email: z.string().email().openapi({ example: "user@example.com" }),
+  code: z.string().length(6).openapi({ example: "123456" }),
 });
 
+const VerifyOtpResponseSchema = z.object({
+  resetToken: z.string().openapi({ example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }),
+});
+
+const VerifyEmailRequestSchema = z.object({
+  email: z.string().email().openapi({ example: "user@example.com" }),
+  code: z.string().length(6).openapi({ example: "123456" }),
+});
+
+const ResetPasswordRequestSchema = z.object({
+  token: z.string().min(1).openapi({ example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }),
+  newPassword: z.string().min(6).openapi({ example: "newStrongPassword123" })
+});
 
 export const authRegistry = new OpenAPIRegistry();
 
@@ -57,7 +69,10 @@ authRegistry.register("LoginRequest", LoginRequestSchema);
 authRegistry.register("LoginResponse", LoginResponseSchema);
 authRegistry.register("RefreshResponse", RefreshResponseSchema);
 authRegistry.register("ForgotPasswordRequest", ForgotPasswordRequestSchema);
+authRegistry.register("VerifyOtpRequest", VerifyOtpRequestSchema);
+authRegistry.register("VerifyOtpResponse", VerifyOtpResponseSchema);
 authRegistry.register("ResetPasswordRequest", ResetPasswordRequestSchema);
+authRegistry.register("VerifyEmailRequest", VerifyEmailRequestSchema);
 
 // Initialize dependencies
 const authController = new AuthController();
@@ -81,7 +96,7 @@ authRegistry.registerPath({
 });
 router.post(
   "/register",
-  validateRequestMiddleware(RegisterRequestSchema, "body"),
+  validateRequestMiddleware({ body: RegisterRequestSchema }),
   authController.register
 );
 
@@ -102,7 +117,7 @@ authRegistry.registerPath({
 });
 router.post(
   "/login",
-  validateRequestMiddleware(LoginRequestSchema, "body"),
+  validateRequestMiddleware({ body: LoginRequestSchema }),
   authController.login
 );
 
@@ -131,6 +146,7 @@ authRegistry.registerPath({
   method: "post",
   path: "/auth/forgot-password",
   tags: ["Auth"],
+  description: "Request password reset via OTP. An OTP will be sent to the email if it exists.",
   requestBody: {
     required: true,
     content: {
@@ -139,12 +155,34 @@ authRegistry.registerPath({
       },
     },
   },
-  responses: createApiResponse(z.null(), "If email exists, a reset link has been sent"),
+  responses: createApiResponse(z.object({ message: z.string() }), "If email exists, OTP has been sent"),
 });
 router.post(
   "/forgot-password",
-  validateRequestMiddleware(ForgotPasswordRequestSchema, "body"),
-  authController.forgotPassword
+  validateRequestMiddleware({ body: ForgotPasswordRequestSchema }),
+  authController.requestPasswordReset
+);
+
+// POST /auth/verify-otp
+authRegistry.registerPath({
+  method: "post",
+  path: "/auth/verify-otp",
+  tags: ["Auth"],
+  description: "Verify the OTP code sent to email. Returns a reset token if valid.",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: { $ref: "#/components/schemas/VerifyOtpRequest" },
+      },
+    },
+  },
+  responses: createApiResponse(VerifyOtpResponseSchema, "OTP verified successfully"),
+});
+router.post(
+  "/verify-otp",
+  validateRequestMiddleware({ body: VerifyOtpRequestSchema }),
+  authController.verifyOtp
 );
 
 // POST /auth/reset-password
@@ -152,6 +190,7 @@ authRegistry.registerPath({
   method: "post",
   path: "/auth/reset-password",
   tags: ["Auth"],
+  description: "Reset password using the token received from OTP verification.",
   requestBody: {
     required: true,
     content: {
@@ -160,12 +199,34 @@ authRegistry.registerPath({
       },
     },
   },
-  responses: createApiResponse(z.null(), "Password has been reset successfully"),
+  responses: createApiResponse(z.object({ message: z.string() }), "Password has been reset successfully"),
 });
 router.post(
   "/reset-password",
-  validateRequestMiddleware(ResetPasswordRequestSchema, "body"),
+  validateRequestMiddleware({ body: ResetPasswordRequestSchema }),
   authController.resetPassword
+);
+
+// POST /auth/verify-email
+authRegistry.registerPath({
+  method: "post",
+  path: "/auth/verify-email",
+  tags: ["Auth"],
+  description: "Verify email address using OTP code sent during registration.",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: { $ref: "#/components/schemas/VerifyEmailRequest" },
+      },
+    },
+  },
+  responses: createApiResponse(z.object({ message: z.string() }), "Email verified successfully"),
+});
+router.post(
+  "/verify-email",
+  validateRequestMiddleware({ body: VerifyEmailRequestSchema }),
+  authController.verifyEmail
 );
 
 // GET /auth/google
@@ -180,7 +241,7 @@ router.get(
   passport.authenticate("google", {
     scope: ["email", "profile"],
     session: false,
-  })
+  }),
 );
 
 // GET /auth/google/callback
@@ -190,6 +251,7 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(LoginResponseSchema, "Login with Google successful"),
 });
+
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login", session: false }),
@@ -203,12 +265,13 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(z.null(), "Redirect to Facebook OAuth"),
 });
+
 router.get(
   "/facebook",
   passport.authenticate("facebook", {
     scope: ["email", "public_profile"],
     session: false,
-  })
+  }),
 );
 
 // GET /auth/facebook/callback
@@ -218,6 +281,7 @@ authRegistry.registerPath({
   tags: ["Auth"],
   responses: createApiResponse(LoginResponseSchema, "Login with Facebook successful"),
 });
+
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", { failureRedirect: "/login", session: false }),

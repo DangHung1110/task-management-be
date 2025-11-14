@@ -11,7 +11,8 @@
       "@src/*": ["./*"]
     },
     "strict": true,
-
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": [],
     "noImplicitAny": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
@@ -19,9 +20,11 @@
     "emitDecoratorMetadata": true,
     "skipLibCheck": true
   },
-  "exclude": [
+  "exclude": [  
     "public",
-    "dist"
+    "dist",
+    "jest.config.ts",
+    "scripts"
   ],
   "ts-node": {
     "files": true

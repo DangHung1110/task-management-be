@@ -12,17 +12,17 @@ import { routers as moduleRouters } from "./modules/index";
 import { appEnv } from "./config/app.config";
 import passport from "./config/passport.config";
 import { AppDataSource } from "./config/db.config";
+import { runAllSeeders } from "./config/seeders";
 import requestContextMiddleware from './common/middlewares/requestContext.middleware';
+import { errorHandlerMiddleware } from "./common/middlewares";
 
 const app: Express = express();
 
 app.use(express.json());
 app.use(cookieParser());
-// Attach per-request context (used by HttpResponseDto to access Response object)
 app.use(requestContextMiddleware);
 app.set("trust proxy", true);
 
-// Middlewares
 app.use(cors({ origin: appEnv.CORS_ORIGIN, credentials: true }));
 app.use(helmet());
 app.use(morgan("combined"));
@@ -35,16 +35,23 @@ app.use(session({
     sameSite: 'lax'
   }
 }));
-app.use(passport.initialize());
-app.use(passport.session());
 
 AppDataSource.initialize()
-  .then(() => {
-    const healCheckRouterInstance = new moduleRouters.healthCheckRouter();
-    
-    app.use("/health-check", healCheckRouterInstance.router);
+  .then(async () => {
+    await runAllSeeders();
+
+    const healthCheckRouterInstance = new moduleRouters.healthCheckRouter();
+
+    app.use("/health-check", healthCheckRouterInstance.router);
     app.use("/auth", moduleRouters.authRouter);
     app.use("/users", moduleRouters.userRouter);
+    app.use("/workspaces", moduleRouters.workSpacesRouter);
+    app.use("/workspaces", moduleRouters.workSpaceMemberRouter);
+    app.use("/workspaces", moduleRouters.boardRouter);
+    app.use("/boards", moduleRouters.boardRouter);
+    app.use("/boards", moduleRouters.listRouter);
+    app.use("/lists", moduleRouters.listRouter);
+    app.use("/cards", moduleRouters.cardRouter);
 
     app.use(openAPIRouter);
 
@@ -57,3 +64,7 @@ AppDataSource.initialize()
     console.error("Failed to initialize database connection:", error);
     process.exit(1);
   });
+
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(errorHandlerMiddleware);
