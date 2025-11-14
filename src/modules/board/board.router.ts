@@ -6,6 +6,8 @@ import { BoardController } from "./board.controller";
 import { BoardService } from "./board.service";
 import { BoardRepo } from "./repository/board.repository";
 import { WorkSpacesRepo } from "../workSpaces/repository";
+import { requirePermission } from "../../common";
+import { permissionEnum } from "../../config/seeders/rbac.seeder";  
 
 import { 
     getBoardsPaginationQueryDto,
@@ -20,7 +22,7 @@ import {
     validateRequestMiddleware, 
     authenticate, 
     checkWorkspacePermission,
-    checkBoardPermission
+    checkBoardPermission,
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
@@ -78,6 +80,7 @@ boardRegistry.registerPath({
 router.get(
     "/",
     authenticate,
+    requirePermission(permissionEnum.BOARD.READ),
     validateRequestMiddleware({ query: GetBoardsPaginationQuerySchema }),
     boardController.getBoards
 );
@@ -100,7 +103,7 @@ boardRegistry.registerPath({
 router.get(
     "/:boardId",
     authenticate,
-    checkBoardPermission(["owner", "admin", "member"]),
+    requirePermission(permissionEnum.BOARD.READ),
     boardController.getBoardById
 );
 
@@ -129,7 +132,7 @@ boardRegistry.registerPath({
 router.post(
     "/:workspaceId/boards",
     authenticate,
-    checkWorkspacePermission(["owner", "member"]),
+    requirePermission(permissionEnum.BOARD.CREATE),
     validateRequestMiddleware({ body: CreateBoardRequestSchema }),
     boardController.createBoard
 );
@@ -159,7 +162,7 @@ boardRegistry.registerPath({
 router.put(
     "/:boardId",
     authenticate,
-    checkBoardPermission(["owner", "admin"]),
+    requirePermission(permissionEnum.BOARD.UPDATE),
     validateRequestMiddleware({ body: UpdateBoardRequestSchema }),
     boardController.updateBoard
 );
@@ -182,7 +185,7 @@ boardRegistry.registerPath({
 router.delete(
     "/:boardId/soft",
     authenticate,
-    checkBoardPermission(["owner", "admin"]),
+    requirePermission(permissionEnum.BOARD.DELETE),
     boardController.softDeleteBoard
 );
 
@@ -204,7 +207,7 @@ boardRegistry.registerPath({
 router.delete(
     "/:boardId/hard",
     authenticate,
-    checkBoardPermission(["owner"]),
+    requirePermission(permissionEnum.BOARD.DELETE),
     boardController.hardDeleteBoard
 );
 
@@ -226,7 +229,7 @@ boardRegistry.registerPath({
 router.patch(
     "/:boardId/restore",
     authenticate,
-    checkBoardPermission(["owner"]),
+    requirePermission(permissionEnum.BOARD.UPDATE),
     boardController.restoreBoard
 );
 

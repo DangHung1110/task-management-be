@@ -15,6 +15,9 @@ export class List extends BaseEntity {
     @JoinColumn({ name: "boardId" })
     board!: Board;
 
+    @Column({ type: "boolean", default: true })
+    isActive!: boolean;
+
     @OneToMany(() => Card, card => card.list)
     cards!: Card[];
 
@@ -28,5 +31,5 @@ export class List extends BaseEntity {
     archivedAt!: Date | null;
 
     @Column({ type: "int", default: 0 })
-    cardLimit!: number; // 0 means no limit
+    cardLimit!: number; 
 }

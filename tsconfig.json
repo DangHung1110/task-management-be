@@ -12,6 +12,7 @@
     },
     "strict": true,
     "typeRoots": ["./node_modules/@types", "./src/types"],
+    "types": [],
     "noImplicitAny": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,

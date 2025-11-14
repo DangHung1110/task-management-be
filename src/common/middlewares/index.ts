@@ -7,3 +7,4 @@ export * from "./requestContext.middleware";
 export * from "./checkWorkspacePermission.middleware";
 export * from "./checkBoardPermission.middleware";
 export * from "./checkOwner.middleware";
+export * from "./checkListPermission.middleware";

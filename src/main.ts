@@ -14,6 +14,7 @@ import passport from "./config/passport.config";
 import { AppDataSource } from "./config/db.config";
 import { runAllSeeders } from "./config/seeders";
 import requestContextMiddleware from './common/middlewares/requestContext.middleware';
+import { errorHandlerMiddleware } from "./common/middlewares";
 
 const app: Express = express();
 
@@ -45,8 +46,12 @@ AppDataSource.initialize()
     app.use("/auth", moduleRouters.authRouter);
     app.use("/users", moduleRouters.userRouter);
     app.use("/workspaces", moduleRouters.workSpacesRouter);
+    app.use("/workspaces", moduleRouters.workSpaceMemberRouter);
     app.use("/workspaces", moduleRouters.boardRouter);
     app.use("/boards", moduleRouters.boardRouter);
+    app.use("/boards", moduleRouters.listRouter);
+    app.use("/lists", moduleRouters.listRouter);
+    app.use("/cards", moduleRouters.cardRouter);
 
     app.use(openAPIRouter);
 
@@ -62,3 +67,4 @@ AppDataSource.initialize()
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(errorHandlerMiddleware);

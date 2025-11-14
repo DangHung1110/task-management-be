@@ -1,11 +1,11 @@
 import { Repository, DataSource, SelectQueryBuilder } from "typeorm";
-import { Board, BoardMember, BoardMemberRole} from "../../../entities";
+import { Board, BoardMember, BoardMemberRole } from "../../../entities";
 import { PaginationDto, paginationUtils } from "../../../common";
 
 export class BoardRepo {
     private repo: Repository<Board>;
     private boardMemberRepo: Repository<BoardMember>;
-    private pagination: paginationUtils; 
+    private pagination: paginationUtils;
 
     constructor(ds: DataSource) {
         this.repo = ds.getRepository(Board);
@@ -32,15 +32,33 @@ export class BoardRepo {
         }
 
         if (userId) {
-            query.andWhere(
-                "(board.visibility = 'public') OR " +
-                "(board.visibility = 'workspace' AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspaceId = board.workspaceId AND wm.userId = :userId AND wm.isActive = true)) OR " +
-                "(board.visibility = 'private' AND EXISTS (SELECT 1 FROM board_members bm WHERE bm.boardId = board.id AND bm.userId = :userId AND bm.isActive = true))",
-                { userId }
-            );
+            query.andWhere(`
+        (board.visibility = 'public')
+            OR (
+      board.visibility = 'workspace'
+      AND EXISTS (
+        SELECT 1
+        FROM workspace_members wm
+        WHERE wm."workspaceId" = board."workspaceId"
+          AND wm."userId" = :userId
+          AND wm."isActive" = true
+      )
+    )
+    OR (
+      board.visibility = 'private'
+      AND EXISTS (
+        SELECT 1
+        FROM board_members bm
+        WHERE bm."boardId" = board."id"
+          AND bm."userId" = :userId
+          AND bm."isActive" = true
+      )
+    )
+  `, { userId });
         } else {
             query.andWhere("board.visibility = 'public'");
         }
+
 
         if (search) {
             query.andWhere(
@@ -56,7 +74,7 @@ export class BoardRepo {
             pagination: paginationInfo,
         };
     }
- 
+
     async findBoardById(id: string): Promise<Board | null> {
         return this.repo.findOne({
             where: { id, isActive: true },

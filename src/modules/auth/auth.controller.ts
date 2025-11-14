@@ -16,9 +16,11 @@ export class AuthController {
 
     async register(req: Request, res: Response) {
         const { name, email, password } = req.body;
-        const user = await this.authService.register(name, email, password);
+        const ipAddress = req.ip;
+        const userAgent = req.headers["user-agent"];
+        const result = await this.authService.register(name, email, password, ipAddress, userAgent);
 
-        const response = new ServiceResponse(ResponseStatus.Success, 'User registered successfully', user, 201);
+        const response = new ServiceResponse(ResponseStatus.Success, result.message, result.user, 201);
         return this.httpResponse.created(response);
     }
 
@@ -143,6 +145,21 @@ export class AuthController {
             const { token, newPassword } = req.body;
 
             const result = await this.authService.resetPassword(token, newPassword);
+
+            return res.status(200).json({
+                success: true,
+                message: result.message,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    verifyEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, code } = req.body;
+
+            const result = await this.authService.verifyEmail(email, code);
 
             return res.status(200).json({
                 success: true,

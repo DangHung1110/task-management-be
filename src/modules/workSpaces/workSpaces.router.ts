@@ -5,6 +5,7 @@ import { z } from "zod";
 import { WorkSpacesController } from "./workSpaces.controller";
 import { WorkSpacesService } from "./workSpaces.service";
 import { WorkSpacesRepo } from "./repository";
+import { permissionEnum } from "../../config/seeders/rbac.seeder";
 
 import { 
     GetWorkSpacesPaginationQueryDto,
@@ -19,8 +20,7 @@ import {
     validateRequestMiddleware, 
     authenticate, 
     requirePermission,
-    checkWorkspacePermission,
-    WorkSpaceMemberEnum
+
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
@@ -75,6 +75,7 @@ workSpacesRegistry.registerPath({
 router.get(
     "/",
     authenticate,
+    requirePermission(permissionEnum.WORKSPACE.READ),
     validateRequestMiddleware({ query: GetWorkSpacesPaginationQuerySchema }),
     workSpacesController.getWorkSpaces
 );
@@ -97,7 +98,7 @@ workSpacesRegistry.registerPath({
 router.get(
     "/:workspaceId",
     authenticate,
-    checkWorkspacePermission(["owner", "member"]),
+    requirePermission(permissionEnum.WORKSPACE.READ),
     workSpacesController.getWorkSpaceById
 );
 
@@ -123,6 +124,7 @@ workSpacesRegistry.registerPath({
 router.post(
     "/",
     authenticate,
+    requirePermission(permissionEnum.WORKSPACE.CREATE),
     validateRequestMiddleware({ body: WorkSpaceCreateRequestSchema }),
     workSpacesController.createWorkSpace
 );
@@ -152,7 +154,7 @@ workSpacesRegistry.registerPath({
 router.put(
     "/:workspaceId",
     authenticate,
-    checkWorkspacePermission(["owner", "member"]),
+    requirePermission(permissionEnum.WORKSPACE.UPDATE),
     validateRequestMiddleware({ body: WorkSpaceUpdateRequestSchema }),
     workSpacesController.updateWorkSpace
 );
@@ -175,7 +177,7 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/soft",
     authenticate,
-    checkWorkspacePermission(["owner"]),
+    requirePermission(permissionEnum.WORKSPACE.DELETE),
     workSpacesController.shoftDeleteWorkSpace
 );
 
@@ -197,7 +199,7 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/hard",
     authenticate,
-    checkWorkspacePermission(["owner"]),
+    requirePermission(permissionEnum.WORKSPACE.DELETE),
     workSpacesController.hardDeleteWorkSpace
 );
 
@@ -219,7 +221,7 @@ workSpacesRegistry.registerPath({
 router.patch(
     "/:workspaceId/restore",
     authenticate,
-    checkWorkspacePermission(["owner"]),
+    requirePermission(permissionEnum.WORKSPACE.UPDATE),
     workSpacesController.restoreWorkSpace
 );
 

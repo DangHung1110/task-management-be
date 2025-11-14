@@ -102,4 +102,7 @@ export class Card extends BaseEntity {
 
     @OneToMany(() => Attachment, attachment => attachment.card)
     attachments!: Attachment[];
+
+    @Column({ type: "boolean", default: true })
+    isActive!: boolean;
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { UserRepo } from "./repository";
+import { permissionEnum } from "../../config/seeders/rbac.seeder";
 import { 
   GetUsersPaginationQueryDto,
   GetUsersResponseDto,
@@ -60,7 +61,7 @@ userRegistry.registerPath({
 router.get(
   "/",
   authenticate,
-  requirePermission("users", "read"),
+  requirePermission(permissionEnum.USER.READ),
   validateRequestMiddleware({query: GetUsersPaginationQuerySchema}),
   userController.getUsers
 );
@@ -116,7 +117,7 @@ userRegistry.registerPath({
 router.post(
   "/",
   authenticate,
-  requirePermission("users", "create"),
+  requirePermission(permissionEnum.USER.CREATE),
   validateRequestMiddleware({ body: CreateUserDto }),
   userController.createUser
 );
@@ -178,7 +179,7 @@ userRegistry.registerPath({
 router.delete(
   "/:id",
   authenticate,
-  requirePermission("users", "delete"),
+  requirePermission(permissionEnum.USER.DELETE),
   validateRequestMiddleware({
     params: z.object({
       id: z.string().uuid()

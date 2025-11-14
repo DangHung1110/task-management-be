@@ -48,8 +48,7 @@ export class AuthUtils {
 
         userRoles.forEach(ur => {
             ur.role.permissions?.forEach(permission => {
-                permissionsSet.add(`${permission.resource}:${permission.action}`);
-            });
+                permissionsSet.add(permission.permissionName);});
         });
 
         return {

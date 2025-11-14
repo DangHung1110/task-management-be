@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenException, UnauthorizedException } from "../exceptions";
+import { AppDataSource } from "../../config";
+import { Permission } from "../../entities/Role";
+import { In } from "typeorm";
 
-
-export const requirePermission = (resource: string, action: string) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+export const requirePermission = (permissionName: string) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = req.user;
 
@@ -11,17 +13,29 @@ export const requirePermission = (resource: string, action: string) => {
                 throw new UnauthorizedException("User not authenticated");
             }
 
-            if (!user.permissions || user.permissions.length === 0) {
-                throw new ForbiddenException("No permissions assigned to user");
+            if (!user.roles || user.roles.length === 0) {
+                throw new ForbiddenException("No roles assigned to user");
             }
 
-            const requiredPermission = `${resource}:${action}`;
-            const hasPermission = user.permissions.includes(requiredPermission);
+            // Sử dụng permissions đã load sẵn từ authenticate middleware (nếu có)
+            if (user.permissions && user.permissions.length > 0) {
+                if (user.permissions.includes(permissionName)) {
+                    return next();
+                }
+            }
+
+            // Nếu không có permissions trong req.user, query từ database
+            const permissionRepo = AppDataSource.getRepository(Permission);
+            const hasPermission = await permissionRepo.findOne({
+                where: {
+                    permissionName,
+                    role: { name: In(user.roles) }
+                },
+                relations: ["role"]
+            });
 
             if (!hasPermission) {
-                throw new ForbiddenException(
-                    `Access denied: Missing permission [${requiredPermission}]`
-                );
+                throw new ForbiddenException(`Access denied: Missing permission [${permissionName}]`);
             }
 
             next();
@@ -32,67 +46,4 @@ export const requirePermission = (resource: string, action: string) => {
 };
 
 
-export const requireAnyPermission = (...permissions: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user;
 
-            if (!user) {
-                throw new UnauthorizedException("User not authenticated");
-            }
-
-            if (!user.permissions || user.permissions.length === 0) {
-                throw new ForbiddenException("No permissions assigned to user");
-            }
-
-            const hasPermission = permissions.some(p => 
-                user.permissions?.includes(p)
-            );
-
-            if (!hasPermission) {
-                throw new ForbiddenException(
-                    `Access denied: Require one of permissions [${permissions.join(", ")}]`
-                );
-            }
-
-            next();
-        } catch (error) {
-            next(error);
-        }
-    };
-};
-
-
-export const requireAllPermissions = (...permissions: string[]) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const user = req.user;
-
-            if (!user) {
-                throw new UnauthorizedException("User not authenticated");
-            }
-
-            if (!user.permissions || user.permissions.length === 0) {
-                throw new ForbiddenException("No permissions assigned to user");
-            }
-
-            const hasAllPermissions = permissions.every(p => 
-                user.permissions?.includes(p)
-            );
-
-            if (!hasAllPermissions) {
-                const missingPermissions = permissions.filter(p => 
-                    !user.permissions?.includes(p)
-                );
-                
-                throw new ForbiddenException(
-                    `Access denied: Missing permissions [${missingPermissions.join(", ")}]`
-                );
-            }
-
-            next();
-        } catch (error) {
-            next(error);
-        }
-    };
-};

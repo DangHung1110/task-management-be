@@ -51,6 +51,11 @@ const VerifyOtpResponseSchema = z.object({
   resetToken: z.string().openapi({ example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }),
 });
 
+const VerifyEmailRequestSchema = z.object({
+  email: z.string().email().openapi({ example: "user@example.com" }),
+  code: z.string().length(6).openapi({ example: "123456" }),
+});
+
 const ResetPasswordRequestSchema = z.object({
   token: z.string().min(1).openapi({ example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }),
   newPassword: z.string().min(6).openapi({ example: "newStrongPassword123" })
@@ -67,6 +72,7 @@ authRegistry.register("ForgotPasswordRequest", ForgotPasswordRequestSchema);
 authRegistry.register("VerifyOtpRequest", VerifyOtpRequestSchema);
 authRegistry.register("VerifyOtpResponse", VerifyOtpResponseSchema);
 authRegistry.register("ResetPasswordRequest", ResetPasswordRequestSchema);
+authRegistry.register("VerifyEmailRequest", VerifyEmailRequestSchema);
 
 // Initialize dependencies
 const authController = new AuthController();
@@ -199,6 +205,28 @@ router.post(
   "/reset-password",
   validateRequestMiddleware({ body: ResetPasswordRequestSchema }),
   authController.resetPassword
+);
+
+// POST /auth/verify-email
+authRegistry.registerPath({
+  method: "post",
+  path: "/auth/verify-email",
+  tags: ["Auth"],
+  description: "Verify email address using OTP code sent during registration.",
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: { $ref: "#/components/schemas/VerifyEmailRequest" },
+      },
+    },
+  },
+  responses: createApiResponse(z.object({ message: z.string() }), "Email verified successfully"),
+});
+router.post(
+  "/verify-email",
+  validateRequestMiddleware({ body: VerifyEmailRequestSchema }),
+  authController.verifyEmail
 );
 
 // GET /auth/google

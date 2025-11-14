@@ -73,6 +73,7 @@ export class WorkSpacesRepo {
     }
 
     async updateWorkSpace(id: string, patch: Partial<WorkSpaces>): Promise<UpdateResult> {
+        console.log('Updating WorkSpace with data:', patch);
         return this.repo.update({ id }, patch);
     }
 

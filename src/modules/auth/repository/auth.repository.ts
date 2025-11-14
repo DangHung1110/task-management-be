@@ -24,7 +24,7 @@ export class AuthRepository {
         return this.accountRepo.findByUsername(username);
     }
 
-    async createUserWithAccount(userData: { name: string; email: string }, accountData: { username: string; passwordHash: string }) {
+    async createUserWithAccount(userData: { name: string; email: string; isVerified?: boolean }, accountData: { username: string; passwordHash: string }) {
         const user = await this.userRepo.createAndSave(userData);
         
         await this.accountRepo.createAndSave({

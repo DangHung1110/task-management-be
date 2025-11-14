@@ -15,6 +15,8 @@ import { Request, Response } from "express";
 import { AppDataSource } from "../../config";
 import { OtpType } from "../../entities/User";
 import { transporter, emailTemplates } from "../../config/mail.config";
+import { Role } from "../../entities/Role/role";
+import { UserRole } from "../../entities/Role/userRole";
 
 dotenv.config();
 
@@ -29,7 +31,7 @@ export class AuthService {
         this.otpRepo = new OtpRepository();
     }
 
-    async register(name: string, email: string, password: string): Promise<User> {
+    async register(name: string, email: string, password: string, ipAddress?: string, userAgent?: string): Promise<{ user: User; message: string }> {
         const existingUser = await this.authRepo.findByEmail(email);
         if (existingUser) {
             throw new ConflictException('User already exists');
@@ -38,12 +40,64 @@ export class AuthService {
         const salt = await bcrypt.genSalt(12);
         const hashedPassword = await bcrypt.hash(password, salt);
         
+        // Tạo user với isVerified = false
         const newUser = await this.authRepo.createUserWithAccount(
-            { name, email },
+            { name, email, isVerified: false },
             { username: email, passwordHash: hashedPassword }
         );
         
-        return newUser;
+        // Gán role "user" mặc định cho user mới đăng ký
+        const roleRepo = AppDataSource.getRepository(Role);
+        const userRoleRepo = AppDataSource.getRepository(UserRole);
+        
+        const defaultRole = await roleRepo.findOne({ 
+            where: { name: "user" } 
+        });
+        
+        if (!defaultRole) {
+            console.warn(" Warning: Default 'user' role not found. Please run RBAC seeder first.");
+        } else {
+            // Kiểm tra xem user đã có role này chưa
+            const existingUserRole = await userRoleRepo.findOne({
+                where: {
+                    userId: newUser.id,
+                    roleId: defaultRole.id
+                }
+            });
+            
+            if (!existingUserRole) {
+                await userRoleRepo.save({
+                    userId: newUser.id,
+                    roleId: defaultRole.id
+                });
+            }
+        }
+
+        // Tạo và gửi OTP email verification
+        const canRequest = await this.otpRepo.checkRateLimit(newUser.id, OtpType.VERIFY_EMAIL);
+        if (!canRequest) {
+            throw new BadRequestException("Too many requests. Please try again later.");
+        }
+
+        const otp = await this.otpRepo.createOtp(
+            newUser.id,
+            OtpType.VERIFY_EMAIL,
+            ipAddress,
+            userAgent
+        );
+
+        const emailTemplate = emailTemplates.verifyEmail(otp.code, newUser.name);
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: newUser.email,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+        });
+        
+        return {
+            user: newUser,
+            message: "Registration successful. Please check your email for OTP to verify your account."
+        };
     }
 
     async login(email: string, password: string) {
@@ -57,9 +111,9 @@ export class AuthService {
             throw new NotFoundException('Account not found');
         }
 
-        if (!user.isActive) {
-            throw new NotFoundException('User account is not active');
-        }
+        // if (!user.isActive) {
+        //     throw new NotFoundException('User account is not active');
+        // }
 
         const isPasswordValid = await bcrypt.compare(password, account.passwordHash);
         if (!isPasswordValid) {
@@ -303,5 +357,36 @@ export class AuthService {
             }
             throw error;
         }
+    }
+
+    async verifyEmail(
+        email: string,
+        code: string
+    ): Promise<{ success: boolean; message: string }> {
+        const user = await this.authRepo.findByEmail(email);
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+
+        if (user.isVerified) {
+            throw new BadRequestException("Email already verified");
+        }
+
+        const result = await this.otpRepo.verifyOtp(user.id, code, OtpType.VERIFY_EMAIL);
+        
+        if (!result.valid) {
+            throw new BadRequestException(result.message || "Invalid OTP");
+        }
+
+        await this.otpRepo.markAsUsed(result.otp!.id);
+
+        // Update user isVerified to true
+        user.isVerified = true;
+        await this.authRepo.save(user);
+
+        return {
+            success: true,
+            message: "Email verified successfully",
+        };
     }
 }

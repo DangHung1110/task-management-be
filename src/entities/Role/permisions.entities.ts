@@ -5,10 +5,10 @@ import { Role } from "./role";
 @Entity("permissions")
 export class Permission extends BaseEntity {
     @Column({ type: "varchar" })
-    resource!: string;
+    permissionName!: string;
 
-    @Column({ type: "varchar" })
-    action!: string;
+    @Column({ type: "varchar", nullable: true })
+    description!: string;
 
     @Column({ type: "uuid" })
     roleId!: string;

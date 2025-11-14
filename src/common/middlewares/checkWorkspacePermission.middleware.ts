@@ -7,9 +7,10 @@ import { AuthenticatedRequest } from "./auth.middlewares";
 export const WorkSpaceMemberEnum = {
     OWNER: "owner",
     MEMBER: "member"
-}
+} as const;
+export type WorkSpaceMemberRole = typeof WorkSpaceMemberEnum[keyof typeof WorkSpaceMemberEnum];
 
-export const checkWorkspacePermission = (requiredRoles: ('owner' | 'member')[]) => {
+export const checkWorkspacePermission = (requiredRoles: WorkSpaceMemberRole[]) => {
     return async (req: Request, _res: Response, next: NextFunction) => {
         try { 
             const user = req?.user;
@@ -41,7 +42,7 @@ export const checkWorkspacePermission = (requiredRoles: ('owner' | 'member')[]) 
                 throw new ForbiddenException("You are not a member of this workspace");
             }
 
-            if (!requiredRoles.includes(membership.role as 'owner' | 'member')) {
+            if (!requiredRoles.includes(membership.role as WorkSpaceMemberRole)) {
                 throw new ForbiddenException(`Insufficient permissions. Required roles: ${requiredRoles.join(", ")}`);
             }
             next();
