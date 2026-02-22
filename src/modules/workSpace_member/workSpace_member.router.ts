@@ -14,12 +14,12 @@ import {
     autoBindUtil,
     validateRequestMiddleware,
     authenticate,
-    requirePermission
+    requireWorkspacePermission,
+    asyncHandler
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
 import { permissionEnum } from "../../config/seeders/rbac.seeder";
-import { checkWorkspacePermission, WorkSpaceMemberEnum } from "../../common/middlewares/checkWorkspacePermission.middleware";
 
 extendZodWithOpenApi(z);
 
@@ -49,10 +49,6 @@ const memberController = new WorkSpaceMemberController(memberService);
 const router = express.Router({ mergeParams: true });
 autoBindUtil(memberController);
 
-// Small helper to forward async errors to the global error handler
-const asyncHandler = (fn: (req: any, res: any, next: any) => Promise<any>) =>
-    (req: any, res: any, next: any) => Promise.resolve(fn(req, res, next)).catch(next);
-
 // Invite member to workspace
 workSpaceMemberRegistry.registerPath({
     method: "post",
@@ -79,7 +75,7 @@ workSpaceMemberRegistry.registerPath({
 router.post(
     "/:workspaceId/invite",
     authenticate,
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER, WorkSpaceMemberEnum.MEMBER]),
+    requireWorkspacePermission('canInviteMembers'),
     validateRequestMiddleware({ body: InviteMemberRequestSchema }),
     asyncHandler(memberController.inviteMember)
 );
@@ -130,7 +126,7 @@ workSpaceMemberRegistry.registerPath({
 router.get(
     "/:workspaceId/invitations",
     authenticate,
-    checkWorkspacePermission([WorkSpaceMemberEnum.OWNER, WorkSpaceMemberEnum.MEMBER]),
+    requireWorkspacePermission('canInviteMembers'),
     asyncHandler(memberController.getInvitations)
 );
 

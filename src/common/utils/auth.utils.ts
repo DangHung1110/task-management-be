@@ -4,6 +4,7 @@ import crypto from "crypto"
 import dotenv from "dotenv"
 import { AppDataSource } from "../../config"
 import { UserRole } from "../../entities"
+import { cacheService } from "../cache/cache.service"
 
 dotenv.config()
 
@@ -36,6 +37,14 @@ export class AuthUtils {
         roles: string[];
         permissions: string[];
     }> {
+        const cacheKey = `user:${userId}:roles_permissions`;
+        const cacheTTL = 3600;
+
+        const cached = await cacheService.get<{ roles: string[]; permissions: string[] }>(cacheKey);    
+        if (cached) {
+            return cached;
+        }
+                 
         const userRoleRepo = AppDataSource.getRepository(UserRole);
         
         const userRoles = await userRoleRepo.find({
@@ -51,9 +60,20 @@ export class AuthUtils {
                 permissionsSet.add(permission.permissionName);});
         });
 
-        return {
+        const result = {
             roles,
             permissions: Array.from(permissionsSet)
         };
+        
+        await cacheService.set(cacheKey, result, {
+            ttl: cacheTTL
+        });
+
+        return result;
+    }
+    
+    static async invalidateUserCache(userId: string): Promise<void> {
+        const pattern = `user:${userId}:*`;
+        await cacheService.deletePattern(pattern);
     }
 }

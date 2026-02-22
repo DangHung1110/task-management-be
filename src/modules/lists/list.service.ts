@@ -2,6 +2,8 @@ import { ListRepo } from "./repository";
 import { List } from "../../entities";
 import { BoardRepo } from "../board/repository";
 import { NotFoundException, InternalServerException, BadRequestException } from "../../common";
+import { cacheService } from "../../common/cache/cache.service";
+import { CACHE_CONFIG } from "../../config/cache.config";
 import {
     createListRequestDto,
     CreateListRequestDtoType,
@@ -33,10 +35,21 @@ export class ListService {
     }
 
     async getListById(id: string): Promise<List> {
+        const cacheKey = CACHE_CONFIG.keys.list(id);
+        
+        const cached = await cacheService.get<List>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        
         const list = await this.listRepo.findById(id);
         if (!list) {
             throw new NotFoundException('List not found');
         }
+        
+        await cacheService.set(cacheKey, list, {
+            ttl: CACHE_CONFIG.ttl.listData
+        });
 
         return list;
     }
@@ -60,6 +73,9 @@ export class ListService {
         if (!createdList) {
             throw new InternalServerException('Failed to create list');
         }
+        
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${boardId}:*`);
 
         return createdList;
     }
@@ -85,6 +101,10 @@ export class ListService {
         if (!updatedList) {
             throw new InternalServerException('Failed to update list');
         }
+        
+        await cacheService.delete(CACHE_CONFIG.keys.list(id));
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${list.boardId}:*`);
 
         return updatedList;
     }
@@ -96,6 +116,10 @@ export class ListService {
         }
 
         await this.listRepo.softDelete(list);
+        
+        await cacheService.delete(CACHE_CONFIG.keys.list(id));
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${list.boardId}:*`);
     }
 
     async hardDeleteList(id: string): Promise<void> {
@@ -106,6 +130,10 @@ export class ListService {
         }
 
         await this.listRepo.hardDelete(list);
+        
+        await cacheService.delete(CACHE_CONFIG.keys.list(id));
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${list.boardId}:*`);
     }
 
     async restoreList(id: string): Promise<void> {
@@ -116,6 +144,10 @@ export class ListService {
         }
 
         await this.listRepo.restore(list);
+        
+        await cacheService.delete(CACHE_CONFIG.keys.list(id));
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${list.boardId}:*`);
     }
 
     async swapListPosition(firstListId: string, secondListId: string): Promise<void> {
@@ -138,5 +170,10 @@ export class ListService {
         }
 
         await this.listRepo.swapPositions(first, second);
+        
+        await cacheService.delete(CACHE_CONFIG.keys.list(firstListId));
+        await cacheService.delete(CACHE_CONFIG.keys.list(secondListId));
+        await cacheService.deletePattern(`list:*`);
+        await cacheService.deletePattern(`board:${first.boardId}:*`);
     }
 }

@@ -2,6 +2,8 @@ import { Card, List } from "../../entities";
 import { CardRepo } from "./repository/card.repository";
 import { ListRepo } from "../lists/repository";
 import { BadRequestException, InternalServerException, NotFoundException } from "../../common";
+import { cacheService } from "../../common/cache/cache.service";
+import { CACHE_CONFIG } from "../../config/cache.config";
 import {
 	CreateCardRequestDtoType,
 	GetCardsPaginationRequestDtoType,
@@ -33,10 +35,22 @@ export class CardService {
 	}
 
 	async getCardById(id: string): Promise<Card> {
+		const cacheKey = CACHE_CONFIG.keys.card(id);
+		
+		const cached = await cacheService.get<Card>(cacheKey);
+		if (cached) {
+			return cached;
+		}
+		
 		const card = await this.cardRepo.findById(id);
 		if (!card) {
 			throw new NotFoundException("Card not found");
 		}
+		
+		await cacheService.set(cacheKey, card, {
+			ttl: CACHE_CONFIG.ttl.cardData
+		});
+		
 		return card;
 	}
 
@@ -60,6 +74,10 @@ export class CardService {
 		if (!created) {
 			throw new InternalServerException("Failed to create card");
 		}
+		
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${listId}:*`);
+		
 		return created;
 	}
 
@@ -84,6 +102,11 @@ export class CardService {
 		if (!updated) {
 			throw new InternalServerException("Failed to update card");
 		}
+		
+		await cacheService.delete(CACHE_CONFIG.keys.card(id));
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${card.listId}:*`);
+		
 		return updated;
 	}
 
@@ -93,6 +116,10 @@ export class CardService {
 			throw new NotFoundException("Card not found");
 		}
 		await this.cardRepo.softDelete(card);
+		
+		await cacheService.delete(CACHE_CONFIG.keys.card(id));
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${card.listId}:*`);
 	}
 
 	async hardDeleteCard(id: string): Promise<void> {
@@ -101,6 +128,10 @@ export class CardService {
 			throw new NotFoundException("Card not found");
 		}
 		await this.cardRepo.hardDelete(card);
+		
+		await cacheService.delete(CACHE_CONFIG.keys.card(id));
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${card.listId}:*`);
 	}
 
 	async restoreCard(id: string): Promise<void> {
@@ -109,6 +140,10 @@ export class CardService {
 			throw new NotFoundException("Card not found");
 		}
 		await this.cardRepo.restore(card);
+		
+		await cacheService.delete(CACHE_CONFIG.keys.card(id));
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${card.listId}:*`);
 	}
 
 	async swapCardPosition(firstCardId: string, secondCardId: string): Promise<void> {
@@ -126,6 +161,11 @@ export class CardService {
 			throw new BadRequestException("Cannot swap inactive cards");
 		}
 		await this.cardRepo.swapPositions(first, second);
+		
+		await cacheService.delete(CACHE_CONFIG.keys.card(firstCardId));
+		await cacheService.delete(CACHE_CONFIG.keys.card(secondCardId));
+		await cacheService.deletePattern(`card:*`);
+		await cacheService.deletePattern(`list:${first.listId}:*`);
 	}
 }
 

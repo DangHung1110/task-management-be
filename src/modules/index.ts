@@ -8,8 +8,8 @@ import { boardRouter, boardRegistry } from "./board/board.router";
 import { workSpaceMemberRouter, workSpaceMemberRegistry } from "./workSpace_member/workSpace_member.router";
 import { listRouter, listRegistry } from "./lists/list.router";
 import { cardRouter, cardRegistry } from "./cards/card.router";
-
-export const Registries = [healthCheckRegistry, authRegistry, userRegistry, workSpacesRegistry, boardRegistry, workSpaceMemberRegistry, listRegistry, cardRegistry];
+import { notificationsRouter, notificationsRegistry } from "./notifications/notifications.router";
+export const Registries = [healthCheckRegistry, authRegistry, userRegistry, workSpacesRegistry, boardRegistry, workSpaceMemberRegistry, listRegistry, cardRegistry, notificationsRegistry];
 
 export const routers = {
     authRouter,
@@ -19,5 +19,6 @@ export const routers = {
     boardRouter,
     workSpaceMemberRouter,
     listRouter,
-    cardRouter
+    cardRouter,
+    notificationsRouter,
 };

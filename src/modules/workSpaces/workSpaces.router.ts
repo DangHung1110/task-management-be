@@ -5,7 +5,6 @@ import { z } from "zod";
 import { WorkSpacesController } from "./workSpaces.controller";
 import { WorkSpacesService } from "./workSpaces.service";
 import { WorkSpacesRepo } from "./repository";
-import { permissionEnum } from "../../config/seeders/rbac.seeder";
 
 import { 
     GetWorkSpacesPaginationQueryDto,
@@ -18,9 +17,9 @@ import {
 import { 
     autoBindUtil, 
     validateRequestMiddleware, 
-    authenticate, 
-    requirePermission,
-
+    authenticate,
+    requireWorkspacePermission,
+    asyncHandler
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
@@ -75,9 +74,8 @@ workSpacesRegistry.registerPath({
 router.get(
     "/",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.READ),
     validateRequestMiddleware({ query: GetWorkSpacesPaginationQuerySchema }),
-    workSpacesController.getWorkSpaces
+    asyncHandler(workSpacesController.getWorkSpaces)
 );
 
 workSpacesRegistry.registerPath({
@@ -98,8 +96,8 @@ workSpacesRegistry.registerPath({
 router.get(
     "/:workspaceId",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.READ),
-    workSpacesController.getWorkSpaceById
+    requireWorkspacePermission('canView'),
+    asyncHandler(workSpacesController.getWorkSpaceById)
 );
 
 workSpacesRegistry.registerPath({
@@ -124,9 +122,8 @@ workSpacesRegistry.registerPath({
 router.post(
     "/",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.CREATE),
     validateRequestMiddleware({ body: WorkSpaceCreateRequestSchema }),
-    workSpacesController.createWorkSpace
+    asyncHandler(workSpacesController.createWorkSpace)
 );
 
 workSpacesRegistry.registerPath({
@@ -154,9 +151,9 @@ workSpacesRegistry.registerPath({
 router.put(
     "/:workspaceId",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.UPDATE),
+    requireWorkspacePermission('canUpdate'),
     validateRequestMiddleware({ body: WorkSpaceUpdateRequestSchema }),
-    workSpacesController.updateWorkSpace
+    asyncHandler(workSpacesController.updateWorkSpace)
 );
 
 workSpacesRegistry.registerPath({
@@ -177,8 +174,8 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/soft",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.DELETE),
-    workSpacesController.shoftDeleteWorkSpace
+    requireWorkspacePermission('canDelete'),
+    asyncHandler(workSpacesController.shoftDeleteWorkSpace)
 );
 
 workSpacesRegistry.registerPath({
@@ -199,8 +196,8 @@ workSpacesRegistry.registerPath({
 router.delete(
     "/:workspaceId/hard",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.DELETE),
-    workSpacesController.hardDeleteWorkSpace
+    requireWorkspacePermission('canDelete'),
+    asyncHandler(workSpacesController.hardDeleteWorkSpace)
 );
 
 workSpacesRegistry.registerPath({
@@ -221,8 +218,8 @@ workSpacesRegistry.registerPath({
 router.patch(
     "/:workspaceId/restore",
     authenticate,
-    requirePermission(permissionEnum.WORKSPACE.UPDATE),
-    workSpacesController.restoreWorkSpace
+    requireWorkspacePermission('canUpdate'),
+    asyncHandler(workSpacesController.restoreWorkSpace)
 );
 
 export const workSpacesRouter = router;

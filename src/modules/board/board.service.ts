@@ -2,6 +2,8 @@ import { BoardRepo } from "./repository";
 import { Board } from "../../entities";
 import { WorkSpacesRepo } from "../workSpaces/repository";
 import { NotFoundException, InternalServerException } from "../../common";
+import { cacheService } from "../../common/cache/cache.service";
+import { CACHE_CONFIG } from "../../config/cache.config";
 import {
     GetBoardsPaginationQueryDtoType,
     BoardsListResponseType,
@@ -70,14 +72,32 @@ export class BoardService {
     }
 
     async getBoardById(id: string, userId?: string): Promise<BoardResponseType> {
+        const cacheKey = CACHE_CONFIG.keys.board(id);
+        
+        const cached = await cacheService.get<BoardResponseType>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        
         const board = await this.boardRepo.findBoardById(id);
         if (!board) {
             throw new NotFoundException('Board not found');
         }
-        return this.transformBoardToResponse(board, userId);
+        
+        const result = this.transformBoardToResponse(board, userId);
+        
+        await cacheService.set(cacheKey, result, {
+            ttl: CACHE_CONFIG.ttl.boardData
+        });
+        
+        return result;
     }
 
     async createBoard(data: CreateBoardRequestDtoType & { workspaceId: string }, ownerId: string): Promise<BoardResponseType> {
+        
+        await cacheService.deletePattern(`board:*`);
+        await cacheService.deletePattern(`workspace:${data.workspaceId}:*`);
+        
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(data.workspaceId)
         if (!workSpace) {
             throw new NotFoundException('Workspace not found for the board');
@@ -102,10 +122,19 @@ export class BoardService {
         }
 
         await this.boardRepo.updateBoard(id, data);
+        
+        await cacheService.delete(CACHE_CONFIG.keys.board(id));
+        await cacheService.deletePattern(`board:*`);
+        await cacheService.deletePattern(`workspace:${board.workspaceId}:*`);
+        
         const updatedBoard = await this.boardRepo.findBoardById(id);
         if (!updatedBoard) {
             throw new InternalServerException('Failed to retrieve updated board');
         }
+        
+        await cacheService.delete(CACHE_CONFIG.keys.board(id));
+        await cacheService.deletePattern(`board:*`);
+        await cacheService.deletePattern(`workspace:${board.workspaceId}:*`);
         return this.transformBoardToResponse(updatedBoard, userId);
     }
 
@@ -114,10 +143,18 @@ export class BoardService {
         if (!board) {
             throw new NotFoundException('Board not found');
         }
+        
+        await cacheService.delete(CACHE_CONFIG.keys.board(id));
+        await cacheService.deletePattern(`board:*`);
+        await cacheService.deletePattern(`workspace:${board.workspaceId}:*`);
         await this.boardRepo.softDeleteBoard(id);
     }
 
     async hardDeleteBoard(id: string): Promise<void> {
+        
+        await cacheService.delete(CACHE_CONFIG.keys.board(id));
+        await cacheService.deletePattern(`board:*`);
+        await cacheService.deletePattern(`workspace:${board.workspaceId}:*`);
         const board = await this.boardRepo.findBoardById(id);
         if (!board) {
             throw new NotFoundException('Board not found');

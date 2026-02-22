@@ -15,6 +15,10 @@ import { AppDataSource } from "./config/db.config";
 import { runAllSeeders } from "./config/seeders";
 import requestContextMiddleware from './common/middlewares/requestContext.middleware';
 import { errorHandlerMiddleware } from "./common/middlewares";
+import { create } from "domain";
+import { createServer } from "http";
+import notificationsGateway from "./modules/notifications/notifications.gateway";
+import { RedisClient } from "./config/redis.config";
 
 const app: Express = express();
 
@@ -38,7 +42,17 @@ app.use(session({
 
 AppDataSource.initialize()
   .then(async () => {
+    const redisConn = await RedisClient.ping();
+    if(redisConn) {
+      console.log('Successfully connected to Redis');
+    } else {
+      console.error('Failed to connect to Redis');
+    }
+      
     await runAllSeeders();
+    
+    const { rbacCacheService } = await import('./common/cache/strategies/rbac.cache');
+    await rbacCacheService.preloadAllPermissions();
 
     const healthCheckRouterInstance = new moduleRouters.healthCheckRouter();
 
@@ -52,10 +66,13 @@ AppDataSource.initialize()
     app.use("/boards", moduleRouters.listRouter);
     app.use("/lists", moduleRouters.listRouter);
     app.use("/cards", moduleRouters.cardRouter);
+    app.use("/notifications", moduleRouters.notificationsRouter);
 
     app.use(openAPIRouter);
+    const server = createServer(app);
+    notificationsGateway.initialize(server);
 
-    app.listen(appEnv.PORT, () => {
+    server.listen(appEnv.PORT, () => {
       const { NODE_ENV, HOST, PORT } = appEnv;
       console.log(`Server (${NODE_ENV}) running on port http://${HOST}:${PORT}`);
     });

@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import { ForbiddenException, UnauthorizedException } from "../exceptions";
 
 export const requireRole = (...roles: string[]) => {
+    // Validate input - đảm bảo có ít nhất 1 role hợp lệ
+    if (!roles || roles.length === 0) {
+        throw new Error("requireRole middleware requires at least one role");
+    }
+    
+    if (roles.some(role => !role || typeof role !== 'string' || role.trim() === "")) {
+        throw new Error("requireRole middleware requires valid role names");
+    }
+
     return (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = req.user;
@@ -31,6 +40,15 @@ export const requireRole = (...roles: string[]) => {
 
 
 export const requireAllRoles = (...roles: string[]) => {
+    // Validate input
+    if (!roles || roles.length === 0) {
+        throw new Error("requireAllRoles middleware requires at least one role");
+    }
+    
+    if (roles.some(role => !role || typeof role !== 'string' || role.trim() === "")) {
+        throw new Error("requireAllRoles middleware requires valid role names");
+    }
+
     return (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = req.user;
@@ -59,7 +77,5 @@ export const requireAllRoles = (...roles: string[]) => {
     };
 };
 
-
+// Only export requireAdmin - remove confusing aliases
 export const requireAdmin = requireRole("admin");
-export const checkRole = requireRole;
-export const checkAuth = requireAdmin;

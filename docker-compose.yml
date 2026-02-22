@@ -35,8 +35,43 @@ services:
     networks:
       - task-net
 
+  task-redis:
+    image: redis:7-alpine
+    container_name: task-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    environment:
+      - REDIS_PASSWORD=391351
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - task-net
+    restart: unless-stopped
+  
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:task-redis:6379:0:391351
+    depends_on:
+      - task-redis
+    networks:
+      - task-net
+    restart: unless-stopped
+
 networks:
   task-net:
+    driver: bridge
 
 volumes:
   task_postgres_data:
+  redis_data:

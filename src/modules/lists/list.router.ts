@@ -6,8 +6,6 @@ import { ListController } from "./list.controller";
 import { ListService } from "./list.service";
 import { ListRepo } from "./repository";
 import { BoardRepo } from "../board/repository";
-import { checkBoardPermission } from "../../common";
-import { BoardMemberEnum } from "../../common/middlewares/checkBoardPermission.middleware";
 
 import {
     createListRequestDto,
@@ -22,7 +20,9 @@ import {
     autoBindUtil,
     validateRequestMiddleware,
     authenticate,
-    checkListBoardPermission,
+    requireBoardPermission,
+    requireBoardPermissionViaList,
+    asyncHandler
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
@@ -90,9 +90,9 @@ listRegistry.registerPath({
 router.get(
     "/:boardId/lists",
     authenticate,
-    checkBoardPermission([BoardMemberEnum.OWNER, BoardMemberEnum.ADMIN, BoardMemberEnum.MEMBER]),
+    requireBoardPermission('canView'),
     validateRequestMiddleware({ query: GetListsPaginationQuerySchema }),
-    listController.getLists
+    asyncHandler(listController.getLists)
 );
 
 listRegistry.registerPath({
@@ -113,8 +113,8 @@ listRegistry.registerPath({
 router.get(
     "/lists/:id",
     authenticate,
-    checkListBoardPermission(),
-    listController.getListById
+    requireBoardPermissionViaList('canView'),
+    asyncHandler(listController.getListById)
 );
 
 listRegistry.registerPath({
@@ -142,9 +142,9 @@ listRegistry.registerPath({
 router.post(
     "/:boardId/lists",
     authenticate,
-    checkBoardPermission([BoardMemberEnum.OWNER, BoardMemberEnum.ADMIN, BoardMemberEnum.MEMBER]),
+    requireBoardPermission('canManageLists'),
     validateRequestMiddleware({ body: CreateListRequestSchema }),
-    listController.createList
+    asyncHandler(listController.createList)
 );
 
 listRegistry.registerPath({
@@ -172,9 +172,9 @@ listRegistry.registerPath({
 router.put(
     "/lists/:id",
     authenticate,
-    checkListBoardPermission(),
+    requireBoardPermissionViaList('canManageLists'),
     validateRequestMiddleware({ body: UpdateListRequestSchema }),
-    listController.updateList
+    asyncHandler(listController.updateList)
 );
 
 listRegistry.registerPath({
@@ -195,8 +195,8 @@ listRegistry.registerPath({
 router.delete(
     "/lists/:id",
     authenticate,
-    checkListBoardPermission(),
-    listController.deleteList
+    requireBoardPermissionViaList('canManageLists'),
+    asyncHandler(listController.deleteList)
 );
 
 listRegistry.registerPath({
@@ -217,8 +217,8 @@ listRegistry.registerPath({
 router.delete(
     "/lists/:id/hard",
     authenticate,
-    checkListBoardPermission(),
-    listController.hardDeleteList
+    requireBoardPermissionViaList('canManageLists'),
+    asyncHandler(listController.hardDeleteList)
 );
 
 listRegistry.registerPath({
@@ -239,8 +239,8 @@ listRegistry.registerPath({
 router.patch(
     "/lists/:id/restore",
     authenticate,
-    checkListBoardPermission(),
-    listController.restoreList
+    requireBoardPermissionViaList('canManageLists'),
+    asyncHandler(listController.restoreList)
 );
 
 listRegistry.registerPath({
@@ -265,9 +265,9 @@ listRegistry.registerPath({
 router.post(
     "/lists/swap-position",
     authenticate,
-    checkListBoardPermission(),
+    requireBoardPermissionViaList('canManageLists'),
     validateRequestMiddleware({ body: SwapListPositionRequestSchema }),
-    listController.swapListPosition
+    asyncHandler(listController.swapListPosition)
 );
 
 export const listRouter = router;

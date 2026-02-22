@@ -3,7 +3,7 @@ import express from "express";
 import { z } from "zod";
 import { AppDataSource } from "../../config";
 import { createApiResponse } from "../../swagger";
-import { autoBindUtil, authenticate, checkListBoardPermission, checkCardBoardPermission, validateRequestMiddleware } from "../../common";
+import { autoBindUtil, authenticate, requireBoardPermissionViaList, requireBoardPermissionViaCard, asyncHandler, validateRequestMiddleware } from "../../common";
 import { CardRepo } from "./repository/card.repository";
 import { ListRepo } from "../lists/repository";
 import { CardService } from "./card.service";
@@ -64,9 +64,9 @@ cardRegistry.registerPath({
 router.get(
 	"/lists/:listId/cards",
 	authenticate,
-	checkListBoardPermission(),
+	requireBoardPermissionViaList('canView'),
 	validateRequestMiddleware({ query: GetCardsPaginationQuerySchema }),
-	cardController.getCards
+	asyncHandler(cardController.getCards)
 );
 
 cardRegistry.registerPath({
@@ -77,7 +77,7 @@ cardRegistry.registerPath({
 	request: { params: z.object({ cardId: z.string().uuid() }) },
 	responses: createApiResponse(getCardSchema, "Get Card by ID successfully"),
 });
-router.get("/cards/:id", authenticate, checkCardBoardPermission(), cardController.getCardById);
+router.get("/cards/:id", authenticate, requireBoardPermissionViaCard('canView'), asyncHandler(cardController.getCardById));
 
 cardRegistry.registerPath({
 	method: "post",
@@ -93,9 +93,9 @@ cardRegistry.registerPath({
 router.post(
 	"/lists/:listId/cards",
 	authenticate,
-	checkListBoardPermission(),
+	requireBoardPermissionViaList('canManageCards'),
 	validateRequestMiddleware({ body: CreateCardRequestSchema }),
-	cardController.createCard
+	asyncHandler(cardController.createCard)
 );
 
 cardRegistry.registerPath({
@@ -112,9 +112,9 @@ cardRegistry.registerPath({
 router.put(
 	"/cards/:id",
 	authenticate,
-	checkCardBoardPermission(),
+	requireBoardPermissionViaCard('canManageCards'),
 	validateRequestMiddleware({ body: UpdateCardRequestSchema }),
-	cardController.updateCard
+	asyncHandler(cardController.updateCard)
 );
 
 cardRegistry.registerPath({
@@ -125,7 +125,7 @@ cardRegistry.registerPath({
 	request: { params: z.object({ cardId: z.string().uuid() }) },
 	responses: createApiResponse(z.object({ message: z.string() }), "Card deleted successfully"),
 });
-router.delete("/cards/:id", authenticate, checkCardBoardPermission(), cardController.deleteCard);
+router.delete("/cards/:id", authenticate, requireBoardPermissionViaCard('canManageCards'), asyncHandler(cardController.deleteCard));
 
 cardRegistry.registerPath({
 	method: "delete",
@@ -135,7 +135,7 @@ cardRegistry.registerPath({
 	request: { params: z.object({ cardId: z.string().uuid() }) },
 	responses: createApiResponse(z.object({ message: z.string() }), "Card permanently deleted successfully"),
 });
-router.delete("/cards/:id/hard", authenticate, checkCardBoardPermission(), cardController.hardDeleteCard);
+router.delete("/cards/:id/hard", authenticate, requireBoardPermissionViaCard('canManageCards'), asyncHandler(cardController.hardDeleteCard));
 
 cardRegistry.registerPath({
 	method: "patch",
@@ -145,7 +145,7 @@ cardRegistry.registerPath({
 	request: { params: z.object({ cardId: z.string().uuid() }) },
 	responses: createApiResponse(z.object({ message: z.string() }), "Card restored successfully"),
 });
-router.patch("/cards/:id/restore", authenticate, checkCardBoardPermission(), cardController.restoreCard);
+router.patch("/cards/:id/restore", authenticate, requireBoardPermissionViaCard('canManageCards'), asyncHandler(cardController.restoreCard));
 
 cardRegistry.registerPath({
 	method: "post",
@@ -158,9 +158,9 @@ cardRegistry.registerPath({
 router.post(
 	"/cards/swap-position",
 	authenticate,
-	checkCardBoardPermission(),
+	requireBoardPermissionViaCard('canManageCards'),
 	validateRequestMiddleware({ body: SwapCardPositionRequestSchema }),
-	cardController.swapCardPosition
+	asyncHandler(cardController.swapCardPosition)
 );
 
 export const cardRouter = router;

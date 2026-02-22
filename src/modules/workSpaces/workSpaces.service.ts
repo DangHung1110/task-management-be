@@ -1,6 +1,8 @@
 import { WorkSpacesRepo } from "./repository";
 import { WorkSpaces } from "../../entities";
 import { NotFoundException, InternalServerException } from "../../common";
+import { cacheService } from "../../common/cache/cache.service";
+import { CACHE_CONFIG } from "../../config/cache.config";
 import {
     GetWorkSpacesPaginationQueryDtoType,
     WorkSpacesListResponseSchema,
@@ -69,11 +71,25 @@ export class WorkSpacesService {
     }
 
     async getWorkSpaceByID(id: string, userId?: string): Promise<WorkSpacesResponseType> {
+        const cacheKey = CACHE_CONFIG.keys.workspace(id);
+        
+        const cached = await cacheService.get<WorkSpacesResponseType>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(id);
         if (!workSpace) {
             throw new NotFoundException('WorkSpace not found');
         }
-        return this.transformWorkSpaceToResponse(workSpace, userId);
+        
+        const result = this.transformWorkSpaceToResponse(workSpace, userId);
+        
+        await cacheService.set(cacheKey, result, {
+            ttl: CACHE_CONFIG.ttl.workspaceData
+        });
+        
+        return result;
     }
 
     async createWorkSpace(data: WorkSpaceCreateRequestDtoType, ownerId: string): Promise<WorkSpacesResponseType> {
@@ -86,6 +102,9 @@ export class WorkSpacesService {
         if (!newWorkSpace) {
             throw new InternalServerException('Failed to create WorkSpace');
         }
+        
+        await cacheService.deletePattern(`workspace:*`);
+        
         return this.transformWorkSpaceToResponse(newWorkSpace, ownerId);
     }
 
@@ -97,12 +116,19 @@ export class WorkSpacesService {
 
         await this.workSpacesRepo.updateWorkSpace(id, data);
         const updatedWorkSpace = await this.workSpacesRepo.findWorkSpaceById(id);   
+        
+        await cacheService.delete(CACHE_CONFIG.keys.workspace(id));
+        await cacheService.deletePattern(`workspace:*`);
+        
         if (!updatedWorkSpace) {
             throw new InternalServerException('Failed to retrieve updated WorkSpace');
         }
         return this.transformWorkSpaceToResponse(updatedWorkSpace, userId);
     }
-
+    
+        await cacheService.delete(CACHE_CONFIG.keys.workspace(id));
+        await cacheService.deletePattern(`workspace:*`);
+    
     async shoftDateleWorkSapce(id: string): Promise<void> {
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(id);
         if (!workSpace) {
@@ -110,12 +136,17 @@ export class WorkSpacesService {
         }
         await this.workSpacesRepo.softDeleteWorkSpace(id);
     }
-
+    
+        await cacheService.delete(CACHE_CONFIG.keys.workspace(id));
+        await cacheService.deletePattern(`workspace:*`);
+    
     async hardDeleteWorkSpace(id: string): Promise<void> {
         const workSpace = await this.workSpacesRepo.findWorkSpaceById(id);
         if (!workSpace) {
             throw new NotFoundException('WorkSpace not found');
-        }
+        
+        await cacheService.delete(CACHE_CONFIG.keys.workspace(id));
+        await cacheService.deletePattern(`workspace:*`);    }
         await this.workSpacesRepo.hardDeleteWorkSpace(id);
     }
 

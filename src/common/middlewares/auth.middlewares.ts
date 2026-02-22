@@ -65,42 +65,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 };
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const authHeader = req.headers.authorization;
-        
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Access token is required");
-        }
-
-        const token = authHeader.substring(7);
-        const jwtSecret = process.env.JWT_SECRET_KEY;
-
-        if (!jwtSecret) {
-            throw new Error("JWT_SECRET_KEY is not configured");
-        }
-
-        const decoded = jwt.verify(token, jwtSecret) as any;
- 
-        req.user = {
-            userId: decoded.userId,
-            email: decoded.email,
-            role: decoded.role,
-            status: decoded.status
-        } as any;
-
-        next();
-    } catch (error) {
-        if (error instanceof jwt.JsonWebTokenError) {
-            throw new UnauthorizedException("Invalid token");
-        }
-        if (error instanceof jwt.TokenExpiredError) {
-            throw new UnauthorizedException("Token expired");
-        }
-        throw error;
-    }
-};
-
 export class AuthMiddleware {
     static authenticate = authenticate;
 }

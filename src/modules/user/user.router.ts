@@ -17,7 +17,7 @@ import {
   UserItemDto,
   PaginationMetaDto
 } from "./dtos";
-import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission, checkIsOwnerOrAdmin } from "../../common";
+import { autoBindUtil, validateRequestMiddleware, authenticate, requirePermission, requireRole, checkIsOwnerOrAdmin, asyncHandler } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
 
@@ -63,7 +63,7 @@ router.get(
   authenticate,
   requirePermission(permissionEnum.USER.READ),
   validateRequestMiddleware({query: GetUsersPaginationQuerySchema}),
-  userController.getUsers
+  asyncHandler(userController.getUsers)
 );
 
 userRegistry.registerPath({
@@ -91,7 +91,7 @@ router.get(
       id: z.string().uuid()
     }),
   }),
-  userController.getUserById
+  asyncHandler(userController.getUserById)
 );
 
 userRegistry.registerPath({
@@ -119,7 +119,7 @@ router.post(
   authenticate,
   requirePermission(permissionEnum.USER.CREATE),
   validateRequestMiddleware({ body: CreateUserDto }),
-  userController.createUser
+  asyncHandler(userController.createUser)
 );
 
 userRegistry.registerPath({
@@ -155,7 +155,7 @@ router.put(
     })
   }),
   validateRequestMiddleware({ body: UpdateUserDto }),
-  userController.updateUser
+  asyncHandler(userController.updateUser)
 );
 
 userRegistry.registerPath({
@@ -185,7 +185,7 @@ router.delete(
       id: z.string().uuid()
     })
   }),
-  userController.deleteUser
+  asyncHandler(userController.deleteUser)
 );
 
 export const userRouter = router;

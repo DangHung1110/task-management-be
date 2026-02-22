@@ -11,11 +11,13 @@ export const checkIsOwnerOrAdmin = (paramName: string = "id") => {
                 throw new ForbiddenException("User not authenticated");
             }
 
+            // Check admin FIRST - admin bypasses all checks
             const isAdmin = user.roles?.includes("admin");
             if (isAdmin) {
                 return next();
             }
 
+            // Then check if user is owner of the resource
             if (user.id === resourceId) {
                 return next();
             }

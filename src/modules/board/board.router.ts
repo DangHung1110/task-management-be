@@ -6,8 +6,6 @@ import { BoardController } from "./board.controller";
 import { BoardService } from "./board.service";
 import { BoardRepo } from "./repository/board.repository";
 import { WorkSpacesRepo } from "../workSpaces/repository";
-import { requirePermission } from "../../common";
-import { permissionEnum } from "../../config/seeders/rbac.seeder";  
 
 import { 
     getBoardsPaginationQueryDto,
@@ -21,8 +19,9 @@ import {
     autoBindUtil, 
     validateRequestMiddleware, 
     authenticate, 
-    checkWorkspacePermission,
-    checkBoardPermission,
+    requireWorkspacePermission,
+    requireBoardPermission,
+    asyncHandler
 } from "../../common";
 import { createApiResponse } from "../../swagger";
 import { AppDataSource } from "../../config";
@@ -80,9 +79,8 @@ boardRegistry.registerPath({
 router.get(
     "/",
     authenticate,
-    requirePermission(permissionEnum.BOARD.READ),
     validateRequestMiddleware({ query: GetBoardsPaginationQuerySchema }),
-    boardController.getBoards
+    asyncHandler(boardController.getBoards)
 );
 
 boardRegistry.registerPath({
@@ -103,8 +101,8 @@ boardRegistry.registerPath({
 router.get(
     "/:boardId",
     authenticate,
-    requirePermission(permissionEnum.BOARD.READ),
-    boardController.getBoardById
+    requireBoardPermission('canView'),
+    asyncHandler(boardController.getBoardById)
 );
 
 boardRegistry.registerPath({
@@ -132,9 +130,9 @@ boardRegistry.registerPath({
 router.post(
     "/:workspaceId/boards",
     authenticate,
-    requirePermission(permissionEnum.BOARD.CREATE),
+    requireWorkspacePermission('canCreateBoard'),
     validateRequestMiddleware({ body: CreateBoardRequestSchema }),
-    boardController.createBoard
+    asyncHandler(boardController.createBoard)
 );
 
 boardRegistry.registerPath({
@@ -162,9 +160,9 @@ boardRegistry.registerPath({
 router.put(
     "/:boardId",
     authenticate,
-    requirePermission(permissionEnum.BOARD.UPDATE),
+    requireBoardPermission('canUpdate'),
     validateRequestMiddleware({ body: UpdateBoardRequestSchema }),
-    boardController.updateBoard
+    asyncHandler(boardController.updateBoard)
 );
 
 boardRegistry.registerPath({
@@ -185,8 +183,8 @@ boardRegistry.registerPath({
 router.delete(
     "/:boardId/soft",
     authenticate,
-    requirePermission(permissionEnum.BOARD.DELETE),
-    boardController.softDeleteBoard
+    requireBoardPermission('canDelete'),
+    asyncHandler(boardController.softDeleteBoard)
 );
 
 boardRegistry.registerPath({
@@ -207,8 +205,8 @@ boardRegistry.registerPath({
 router.delete(
     "/:boardId/hard",
     authenticate,
-    requirePermission(permissionEnum.BOARD.DELETE),
-    boardController.hardDeleteBoard
+    requireBoardPermission('canDelete'),
+    asyncHandler(boardController.hardDeleteBoard)
 );
 
 boardRegistry.registerPath({
@@ -229,8 +227,8 @@ boardRegistry.registerPath({
 router.patch(
     "/:boardId/restore",
     authenticate,
-    requirePermission(permissionEnum.BOARD.UPDATE),
-    boardController.restoreBoard
+    requireBoardPermission('canUpdate'),
+    asyncHandler(boardController.restoreBoard)
 );
 
 export const boardRouter = router;
