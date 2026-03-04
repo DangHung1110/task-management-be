@@ -11,3 +11,4 @@ export * from './Labels';
 export * from './Checklists';
 export * from './Activities';
 export * from './Notifications';
+export * from './Templates';
