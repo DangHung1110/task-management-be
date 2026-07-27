@@ -57,24 +57,24 @@ Install dependencies:
 yarn install
 ```
 
-Create an `.env` file with the required values:
+Create an `.env` file with these keys. Do not commit real values:
 
 ```env
-NODE_ENV=development
-HOST=localhost
-PORT=4411
-CORS_ORIGIN=http://localhost:5173
-SESSION_SECRET=dev_session_secret
+NODE_ENV=
+HOST=
+PORT=
+CORS_ORIGIN=
+SESSION_SECRET=
 
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=task_db
+DB_HOST=
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
 
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-FE_URL=http://localhost:5173
+JWT_ACCESS_SECRET=
+JWT_REFRESH_SECRET=
+FE_URL=
 ```
 
 Run the API:
